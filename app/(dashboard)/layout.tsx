@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Sidebar } from "@/app/components/sidebar";
+import { applyPreset, getSavedPreset } from "@/lib/color-themes";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    applyPreset(getSavedPreset());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

@@ -5,14 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
-import gsap from "gsap";
-import {
-  FilePdf,
-  Image,
-  FileText,
-  File,
-  MagnifyingGlass,
-} from "@phosphor-icons/react";
+import { logActivity } from "@/lib/activity";
+import { MagnifyingGlass, CheckSquare, SquaresFour, Trash, PencilLine, CalendarBlank, Tag, X, Check, CaretDown } from "@phosphor-icons/react";
+import { fileIcon, iconClass } from "@/lib/file-icons";
+import { TagInput } from "@/app/components/tag-input";
 import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
@@ -32,28 +28,18 @@ const dotTagColor = (cat: string | null) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const certIconClass = (type: string) => {
-  const t = (type || "").toUpperCase();
-  if (t.includes("PDF")) return "pdf";
-  if (t.includes("IMAGE") || t.includes("PNG") || t.includes("JPG") || t.includes("JPEG")) return "image";
-  if (t.includes("DOC") || t.includes("WORD")) return "doc";
-  return "other";
-};
-
-const certIcon = (type: string) => {
-  const t = (type || "").toUpperCase();
-  if (t.includes("PDF")) return <FilePdf weight="duotone" />;
-  if (t.includes("IMAGE") || t.includes("PNG") || t.includes("JPG") || t.includes("JPEG")) return <Image weight="duotone" />;
-  if (t.includes("DOC") || t.includes("WORD")) return <FileText weight="duotone" />;
-  return <File weight="duotone" />;
-};
-
 export function CertificateList() {
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchAction, setBatchAction] = useState<"delete" | "year" | "tags" | null>(null);
+  const [batchYear, setBatchYear] = useState("");
+  const [batchTags, setBatchTags] = useState("");
 
   const selectedYear = searchParams.get("year") || "";
   const selectedCategory = searchParams.get("category") || "";
@@ -62,9 +48,10 @@ export function CertificateList() {
   const years = ["2569", "2570", "2571", "2572"];
 
   const load = useCallback(async () => {
+    setLoading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
 
     let dbQuery = supabase
       .from("certificates")
@@ -82,11 +69,10 @@ export function CertificateList() {
 
     const { data } = await dbQuery;
     setCertificates(data || []);
+    setLoading(false);
   }, [selectedYear, selectedCategory, searchQuery]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const categories = [
     "วิชาการ", "กีฬา", "ศิลปะ", "ภาวะผู้นำ",
@@ -95,11 +81,8 @@ export function CertificateList() {
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
+    if (value) params.set(key, value);
+    else params.delete(key);
     router.push(`/certificates?${params.toString()}`);
   }
 
@@ -113,20 +96,79 @@ export function CertificateList() {
     router.push("/certificates");
   }
 
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el || certificates.length === 0) return;
-    const cards = el.querySelectorAll<HTMLElement>(".cert-card");
-    if (!cards.length) return;
-    const dir = sessionStorage.getItem("nav-dir") === "up" ? -1 : 1;
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(cards, { y: 20 * dir, autoAlpha: 0, duration: 0.3, stagger: 0.06, ease: "power2.out", clearProps: "transform" });
-    }, el);
-    return () => mm.revert();
-  }, [certificates.length]);
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAll() {
+    if (selectedIds.size === certificates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(certificates.map((c) => c.id)));
+    }
+  }
+
+  async function executeBatchDelete() {
+    const supabase = createClient();
+    const ids = Array.from(selectedIds);
+    const toDelete = certificates.filter((c) => ids.includes(c.id));
+
+    for (const cert of toDelete) {
+      if (cert.file_path) {
+        await supabase.storage.from("certificate-files").remove([cert.file_path]);
+      }
+    }
+
+    const { error } = await supabase.from("certificates").delete().in("id", ids);
+    if (!error) {
+      ids.forEach((id) => {
+        const cert = toDelete.find((c) => c.id === id);
+        logActivity("cert_deleted", "certificate", id, { title: cert?.title });
+      });
+      setSelectedIds(new Set());
+      setBatchAction(null);
+      load();
+    }
+  }
+
+  async function executeBatchYear() {
+    if (!batchYear) return;
+    const supabase = createClient();
+    const ids = Array.from(selectedIds);
+    await supabase.from("certificates").update({ academic_year: batchYear }).in("id", ids);
+    setSelectedIds(new Set());
+    setBatchAction(null);
+    setBatchYear("");
+    load();
+  }
+
+  async function executeBatchTags() {
+    const supabase = createClient();
+    const ids = Array.from(selectedIds);
+    const certs = certificates.filter((c) => ids.includes(c.id));
+    const allTags = new Set<string>();
+    certs.forEach((c) => (c.tags as string[])?.forEach((t) => allTags.add(t)));
+    const newTags = batchTags.split(",").map((t) => t.trim()).filter(Boolean);
+    newTags.forEach((t) => allTags.add(t));
+    const mergedTags = Array.from(allTags);
+    await supabase.from("certificates").update({ tags: mergedTags }).in("id", ids);
+    setSelectedIds(new Set());
+    setBatchAction(null);
+    setBatchTags("");
+    load();
+  }
 
   useEntranceAnimation(rootRef);
+
+  const hasFilters = selectedYear || selectedCategory || searchQuery;
+  const isFiltered = hasFilters && !loading;
+  const isEmpty = certificates.length === 0 && !loading;
+  const isFresh = certificates.length === 0 && !loading && !hasFilters;
 
   return (
     <div className="archive-layout" ref={rootRef}>
@@ -161,60 +203,231 @@ export function CertificateList() {
       </aside>
 
       <div className="certificates-content">
-        <form className="search-field" onSubmit={handleSearch}>
-          <MagnifyingGlass weight="duotone" style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหาชื่อ ผู้ออก หรือคำอธิบาย..."
-          />
-          <button className="btn btn-primary btn-sm" type="submit">ค้นหา</button>
-        </form>
-
-        <p className="result-count">
-          {certificates.length} ประกาศนียบัตร
-        </p>
-
-        {certificates.length === 0 ? (
-          <div className="empty-state">
-            <p>ไม่พบประกาศนียบัตร</p>
-            <Link className="btn btn-primary" href="/certificates/new">อัปโหลดประกาศนียบัตรอันแรก</Link>
+        <div className="cert-toolbar">
+          <form className="search-field" onSubmit={handleSearch}>
+            <MagnifyingGlass weight="duotone" style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ค้นหาชื่อ ผู้ออก หรือคำอธิบาย..."
+            />
+            {query && (
+              <button type="button" className="search-clear" onClick={() => { setQuery(""); router.push("/certificates"); }}>
+                <X weight="duotone" size={14} />
+              </button>
+            )}
+            <button className="btn btn-primary btn-sm" type="submit">ค้นหา</button>
+          </form>
+          <div className="cert-toolbar-actions">
+            {hasFilters && (
+              <button className="btn btn-sm btn-ghost" onClick={clearFilters}>
+                <X weight="duotone" size={14} /> ล้างตัวกรอง
+              </button>
+            )}
+            <button
+              className={`btn btn-sm ${batchMode ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => { setBatchMode(!batchMode); setSelectedIds(new Set()); }}
+            >
+              <CheckSquare weight="duotone" size={16} />
+              {batchMode ? "เลิกเลือก" : "เลือกหลายรายการ"}
+            </button>
           </div>
-        ) : (
-          <div className="cert-grid">
-            {certificates.map((cert) => (
-              <Link
-                key={cert.id}
-                href={`/certificates/${cert.id}`}
-                className="cert-card"
-              >
-                <div className={`cert-card-tab ${yearDotClasses[cert.academic_year || ""] || "tab-clip"}`} />
-                <div className="cert-card-body">
-                  <div className={`cert-card-icon ${certIconClass(cert.file_type || "")}`}>
-                    {certIcon(cert.file_type || "")}
-                  </div>
-                  <div className="cert-card-info">
-                    <h4>{cert.title}</h4>
-                    <p>{cert.issuer || "—"}</p>
-                    <div className="cert-card-meta">
-                      {cert.academic_year && (
-                        <span className="dot-tag tag-clip">ปี {cert.academic_year}</span>
-                      )}
-                      {cert.category && (
-                        <span className={`dot-tag ${dotTagColor(cert.category)}`}>{cert.category}</span>
-                      )}
-                      {cert.tags?.slice(0, 2).map((tag) => (
-                        <span className="dot-tag" key={tag}>{tag}</span>
-                      ))}
-                    </div>
+        </div>
+
+        {!loading && (
+          <p className="result-count">
+            {certificates.length === 0
+              ? hasFilters ? "ไม่พบประกาศนียบัตรที่ตรงกับตัวกรอง" : "ยังไม่มีประกาศนียบัตร"
+              : `${certificates.length} ประกาศนียบัตร`
+            }
+            {batchMode && selectedIds.size > 0 && ` — เลือก ${selectedIds.size} รายการ`}
+          </p>
+        )}
+
+        {batchMode && selectedIds.size > 0 && (
+          <div className="batch-bar">
+            <span className="batch-bar-label">ดำเนินการกับ {selectedIds.size} รายการที่เลือก:</span>
+            <div className="batch-bar-actions">
+              <button className="btn btn-sm btn-secondary" onClick={selectAll}>
+                <SquaresFour weight="duotone" size={14} />
+                {selectedIds.size === certificates.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
+              </button>
+              <button className="btn btn-sm btn-secondary" onClick={() => setBatchAction("tags")}>
+                <Tag weight="duotone" size={14} /> เพิ่มแท็ก
+              </button>
+              <button className="btn btn-sm btn-secondary" onClick={() => setBatchAction("year")}>
+                <CalendarBlank weight="duotone" size={14} /> เปลี่ยนปี
+              </button>
+              <button className="btn btn-sm btn-danger" onClick={() => setBatchAction("delete")}>
+                <Trash weight="duotone" size={14} /> ลบ
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="cert-tiles">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="cert-tile-skeleton">
+                <div className="skeleton-thumb" />
+                <div className="skeleton-tab" />
+                <div className="skeleton-body">
+                  <div className="skeleton-line w-70" />
+                  <div className="skeleton-line w-40" />
+                  <div className="skeleton-meta">
+                    <div className="skeleton-chip" />
+                    <div className="skeleton-chip" />
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
+          </div>
+        ) : isEmpty ? (
+          isFresh ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <span className="cert-tile-thumb-fallback" style={{ fontSize: 48, opacity: 0.3 }}>
+                  {fileIcon("")}
+                </span>
+              </div>
+              <p>ยังไม่มีประกาศนียบัตร</p>
+              <span className="empty-state-hint">อัปโหลดไฟล์รูปภาพหรือเอกสารประกาศนียบัตรของคุณ</span>
+              <Link className="btn btn-primary" href="/certificates/new" style={{ marginTop: 4 }}>อัปโหลดประกาศนียบัตรอันแรก</Link>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>ไม่พบประกาศนียบัตรที่ตรงกับตัวกรอง</p>
+              <span className="empty-state-hint">ลองเปลี่ยนปีการศึกษาหรือหมวดหมู่ที่เลือก</span>
+              <button className="btn btn-secondary" onClick={clearFilters} style={{ marginTop: 4 }}>
+                <X weight="duotone" /> ล้างตัวกรองทั้งหมด
+              </button>
+            </div>
+          )
+        ) : (
+          <div className="cert-tiles">
+            {certificates.map((cert, i) => {
+              const isImage = cert.file_type?.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i.test(cert.file_url || "");
+              return (
+                <div key={cert.id} className={`cert-tile${batchMode ? " has-checkbox" : ""}`} style={{ "--i": i } as React.CSSProperties}>
+                  {batchMode && (
+                    <label className="cert-tile-check" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(cert.id)}
+                        onChange={() => toggleSelect(cert.id)}
+                      />
+                    </label>
+                  )}
+                  <Link
+                    href={`/certificates/${cert.id}`}
+                    className="cert-tile-link"
+                  >
+                    <div className={`cert-tile-thumb ${isImage ? "cert-tile-image" : ""} ${iconClass(cert.file_type || "")}`}>
+                      {isImage && cert.file_url ? (
+                        <img
+                          src={cert.file_url}
+                          alt={cert.title}
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hide");
+                          }}
+                        />
+                      ) : null}
+                      <span className={`cert-tile-thumb-fallback${(isImage && cert.file_url) ? " hide" : ""}`}>
+                        {fileIcon(cert.file_type || "")}
+                      </span>
+                    </div>
+                    <div className={`cert-tile-tab ${yearDotClasses[cert.academic_year || ""] || "tab-clip"}`} />
+                    <div className="cert-tile-body">
+                      <h4>{cert.title}</h4>
+                      <p>{cert.issuer || "—"}</p>
+                      <div className="cert-tile-meta">
+                        {cert.academic_year && (
+                          <span className="dot-tag tag-clip">ปี {cert.academic_year}</span>
+                        )}
+                        {cert.category && (
+                          <span className={`dot-tag ${dotTagColor(cert.category)}`}>{cert.category}</span>
+                        )}
+                        {cert.tags?.slice(0, 2).map((tag) => (
+                          <span className="dot-tag" key={tag}>{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {batchAction === "delete" && (
+        <div className="modal-overlay" onClick={() => setBatchAction(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <header className="modal-header">
+              <h3>ลบ {selectedIds.size} รายการ?</h3>
+              <button className="modal-close" onClick={() => setBatchAction(null)}><X weight="duotone" /></button>
+            </header>
+            <p style={{ padding: "12px 24px", fontSize: 14, color: "var(--ink-muted)" }}>
+              ไฟล์ที่แนบจะถูกลบออกด้วย การกระทำนี้ไม่สามารถย้อนกลับได้
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setBatchAction(null)}>ยกเลิก</button>
+              <button className="btn btn-danger" onClick={executeBatchDelete}>
+                <Trash weight="duotone" /> ลบทั้งหมด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {batchAction === "year" && (
+        <div className="modal-overlay" onClick={() => setBatchAction(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <header className="modal-header">
+              <h3>เปลี่ยนปีการศึกษา {selectedIds.size} รายการ</h3>
+              <button className="modal-close" onClick={() => setBatchAction(null)}><X weight="duotone" /></button>
+            </header>
+            <div style={{ padding: "16px 24px" }}>
+              <select value={batchYear} onChange={(e) => setBatchYear(e.target.value)} style={{ width: "100%" }}>
+                <option value="">เลือกปี</option>
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setBatchAction(null)}>ยกเลิก</button>
+              <button className="btn btn-primary" disabled={!batchYear} onClick={executeBatchYear}>
+                <Check weight="duotone" /> ยืนยัน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {batchAction === "tags" && (
+        <div className="modal-overlay" onClick={() => setBatchAction(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <header className="modal-header">
+              <h3>เพิ่มแท็กให้ {selectedIds.size} รายการ</h3>
+              <button className="modal-close" onClick={() => setBatchAction(null)}><X weight="duotone" /></button>
+            </header>
+            <div style={{ padding: "16px 24px" }}>
+              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 8 }}>
+                แท็กใหม่จะถูกเพิ่มเข้าไปในแท็กที่มีอยู่แล้วของแต่ละรายการ
+              </p>
+              <TagInput value={batchTags} onChange={setBatchTags} placeholder="พิมพ์แท็กเพื่อเพิ่ม..." />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setBatchAction(null)}>ยกเลิก</button>
+              <button className="btn btn-primary" disabled={!batchTags.trim()} onClick={executeBatchTags}>
+                <Check weight="duotone" /> เพิ่มแท็ก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

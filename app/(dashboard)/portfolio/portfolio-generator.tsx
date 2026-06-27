@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
+import { MagnifyingGlass, ListDashes, CheckCircle, Trash } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
@@ -21,6 +22,9 @@ export function PortfolioGenerator() {
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [certSearch, setCertSearch] = useState("");
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,34 +49,57 @@ export function PortfolioGenerator() {
     return () => { cancelled = true; };
   }, []);
 
+  const sortedSelected = selectedIds
+    .map((id) => certificates.find((c) => c.id === id))
+    .filter(Boolean) as Certificate[];
+
   function toggleCert(id: string) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   }
 
+  function moveCert(fromIdx: number, toIdx: number) {
+    const ids = [...selectedIds];
+    const [moved] = ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, moved);
+    setSelectedIds(ids);
+  }
+
+  function handleDragStart(idx: number) {
+    setDragIdx(idx);
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) return;
+    moveCert(dragIdx, idx);
+    setDragIdx(idx);
+  }
+
+  function handleDragEnd() {
+    setDragIdx(null);
+  }
+
+  const filteredCerts = certSearch
+    ? certificates.filter(
+        (c) =>
+          c.title.toLowerCase().includes(certSearch.toLowerCase()) ||
+          c.issuer?.toLowerCase().includes(certSearch.toLowerCase()),
+      )
+    : certificates;
+
   async function generatePortfolio() {
-    if (!title.trim()) {
-      setError("ตั้งชื่อพอร์ตโฟลิโอ");
-      return;
-    }
-    if (selectedIds.length === 0) {
-      setError("เลือกประกาศนียบัตรอย่างน้อย 1 รายการ");
-      return;
-    }
+    if (!title.trim()) { setError("ตั้งชื่อพอร์ตโฟลิโอ"); return; }
+    if (selectedIds.length === 0) { setError("เลือกประกาศนียบัตรอย่างน้อย 1 รายการ"); return; }
     setError("");
     setSaving(true);
 
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("ไม่ได้เข้าสู่ระบบ"); setSaving(false); return; }
 
-    if (!user) {
-      setError("ไม่ได้เข้าสู่ระบบ");
-      setSaving(false);
-      return;
-    }
-
-    const selectedCerts = certificates.filter((c) => selectedIds.includes(c.id));
+    const selectedCerts = sortedSelected;
 
     const contentSnapshot = {
       profile: profile
@@ -109,15 +136,17 @@ export function PortfolioGenerator() {
       content_snapshot: contentSnapshot as any,
     });
 
-    if (insertError) {
-      setError(insertError.message);
-      setSaving(false);
-      return;
-    }
+    if (insertError) { setError(insertError.message); setSaving(false); return; }
 
     setSaving(false);
+    setSaved(true);
     setTitle("");
     setSelectedIds([]);
+
+    // reload pages
+    const { data: freshPages } = await supabase
+      .from("portfolio_pages").select("*").eq("owner_id", user.id).order("created_at", { ascending: false });
+    if (freshPages) setPortfolioPages(freshPages);
   }
 
   useEntranceAnimation(rootRef);
@@ -159,23 +188,58 @@ export function PortfolioGenerator() {
 
           {error && <p className="form-error" style={{ marginTop: 8 }}>{error}</p>}
 
+          <div className="form-field" style={{ marginTop: 8 }}>
+            <label>ค้นหาประกาศนียบัตร</label>
+            <div className="search-field" style={{ marginTop: 4 }}>
+              <MagnifyingGlass weight="duotone" size={16} style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
+              <input
+                type="text"
+                value={certSearch}
+                onChange={(e) => setCertSearch(e.target.value)}
+                placeholder="พิมพ์ชื่อหรือผู้ออก..."
+                style={{ border: "none", background: "transparent", flex: 1, outline: "none", fontSize: 13 }}
+              />
+            </div>
+          </div>
+
           <div className="cert-checklist" data-entrance>
-            {certificates.map((cert) => (
-              <label key={cert.id} className="cert-check">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(cert.id)}
-                  onChange={() => toggleCert(cert.id)}
-                />
-                <div>
-                  <strong>{cert.title}</strong>
-                  <p>{cert.issuer}</p>
-                </div>
-              </label>
-            ))}
-            {certificates.length === 0 && (
-              <p style={{ color: "var(--ink-muted)", fontSize: 13 }}>ยังไม่มีประกาศนียบัตร</p>
+            {filteredCerts.length === 0 && (
+              <p style={{ color: "var(--ink-muted)", fontSize: 13 }}>
+                {certSearch ? "ไม่พบประกาศนียบัตรที่ค้นหา" : "ยังไม่มีประกาศนียบัตร"}
+              </p>
             )}
+            {filteredCerts.map((cert) => {
+              const isSelected = selectedIds.includes(cert.id);
+              const sortIdx = selectedIds.indexOf(cert.id);
+              return (
+                <label
+                  key={cert.id}
+                  className={`cert-check${isSelected ? " selected" : ""}`}
+                  draggable={isSelected}
+                  onDragStart={() => isSelected && handleDragStart(sortIdx)}
+                  onDragOver={(e) => isSelected && handleDragOver(e, sortIdx)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleCert(cert.id)}
+                  />
+                  {isSelected && (
+                    <span className="cert-check-grip" title="ลากเพื่อเรียงลำดับ">
+                      <ListDashes weight="duotone" size={14} />
+                    </span>
+                  )}
+                  <div>
+                    <strong>{cert.title}</strong>
+                    <p>{cert.issuer}</p>
+                  </div>
+                  {isSelected && (
+                    <span className="cert-check-order">{sortIdx + 1}</span>
+                  )}
+                </label>
+              );
+            })}
           </div>
 
           <button
@@ -186,6 +250,12 @@ export function PortfolioGenerator() {
           >
             {saving ? "กำลังสร้าง..." : "สร้างหน้าพอร์ตโฟลิโอ"}
           </button>
+
+          {saved && (
+            <p className="form-success" style={{ marginTop: 8 }}>
+              <CheckCircle weight="fill" size={14} /> สร้างพอร์ตโฟลิโอสำเร็จ
+            </p>
+          )}
         </div>
       </div>
 
@@ -194,13 +264,30 @@ export function PortfolioGenerator() {
           <h3>พอร์ตโฟลิโอที่บันทึกแล้ว</h3>
           {portfolioPages.map((page) => (
             <div className="panel" key={page.id}>
-              <h4 style={{ margin: 0 }}>{page.title}</h4>
-              <p style={{ margin: "4px 0", color: "var(--ink-muted)", fontSize: 13 }}>
-                {page.selected_certificate_ids?.length || 0} รายการ
-              </p>
-              <p style={{ margin: 0, color: "var(--ink-faint)", fontSize: 12 }}>
-                สร้างเมื่อ {new Date(page.created_at || "").toLocaleDateString()}
-              </p>
+              <div className="portfolio-list-head">
+                <Link href={`/portfolio/${page.id}`} className="portfolio-list-link">
+                  <h4 style={{ margin: 0 }}>{page.title}</h4>
+                  <p style={{ margin: "4px 0", color: "var(--ink-muted)", fontSize: 13 }}>
+                    {page.selected_certificate_ids?.length || 0} รายการ
+                  </p>
+                  <p style={{ margin: 0, color: "var(--ink-faint)", fontSize: 12 }}>
+                    สร้างเมื่อ {new Date(page.created_at || "").toLocaleDateString()}
+                  </p>
+                </Link>
+                <button
+                  className="btn btn-sm btn-ghost"
+                  style={{ color: "var(--ink-faint)", flexShrink: 0 }}
+                  onClick={async () => {
+                    if (!confirm("ลบพอร์ตโฟลิโอนี้?")) return;
+                    const supabase = createClient();
+                    await supabase.from("portfolio_pages").delete().eq("id", page.id);
+                    setPortfolioPages((prev) => prev.filter((p) => p.id !== page.id));
+                  }}
+                  aria-label="ลบ"
+                >
+                  <Trash weight="duotone" size={14} />
+                </button>
+              </div>
             </div>
           ))}
         </div>

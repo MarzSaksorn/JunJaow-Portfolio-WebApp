@@ -28,7 +28,7 @@ export default function LoginPage() {
     } else {
       result = await supabase.auth.signUp({ email, password });
       if (!result.error) {
-        setError("สร้างบัญชีแล้ว ตรวจสอบอีเมลเพื่อยืนยัน");
+        setError("สมัครสมาชิกสำเร็จ");
         setLoading(false);
         return;
       }

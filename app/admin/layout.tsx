@@ -11,6 +11,7 @@ import {
   Gauge,
   ArrowLeft,
 } from "@phosphor-icons/react";
+import { ThemeToggle } from "@/app/components/theme-toggle";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -84,6 +85,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ArrowLeft weight="duotone" size={20} />
             <span>กลับไปแอป</span>
           </Link>
+          <div className="admin-nav-item" style={{ cursor: "default" }}>
+            <ThemeToggle />
+          </div>
           <button className="admin-nav-item" onClick={handleLogout}>
             <SignOut weight="duotone" size={20} />
             <span>ออกจากระบบ</span>

@@ -5,6 +5,9 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { logActivity } from "@/lib/activity";
+import { fileIcon, iconClass, formatFileSize } from "@/lib/file-icons";
+import { TagInput } from "@/app/components/tag-input";
+import { IssuerInput } from "@/app/components/issuer-input";
 
 const years = ["2569", "2570", "2571", "2572"];
 const categories = [
@@ -18,6 +21,11 @@ export default function NewCertificatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [file, setFile] = useState<File | null>(null);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] || null;
+    setFile(f);
+  }
 
   const [form, setForm] = useState({
     title: "",
@@ -145,11 +153,9 @@ export default function NewCertificatePage() {
 
               <div className="form-field">
                 <label>ผู้ออก</label>
-                <input
-                  name="issuer"
+                <IssuerInput
                   value={form.issuer}
-                  onChange={handleChange}
-                  placeholder="องค์กรหรือสถาบัน"
+                  onChange={(val) => setForm((f) => ({ ...f, issuer: val }))}
                 />
               </div>
 
@@ -197,11 +203,10 @@ export default function NewCertificatePage() {
               </div>
 
               <div className="form-field">
-                <label>แท็ก (คั่นด้วยจุลภาค)</label>
-                <input
-                  name="tags"
+                <label>แท็ก</label>
+                <TagInput
                   value={form.tags}
-                  onChange={handleChange}
+                  onChange={(val) => setForm({ ...form, tags: val })}
                   placeholder="วิทยาศาสตร์, การแข่งขัน"
                 />
               </div>
@@ -212,10 +217,18 @@ export default function NewCertificatePage() {
                   <input
                     type="file"
                     accept="image/*,.pdf,.doc,.docx"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    onChange={handleFile}
                   />
                   {file ? (
-                    <p><strong>{file.name}</strong> ({(file.size / 1024 / 1024).toFixed(1)} MB)</p>
+                    <p className="file-preview-selected">
+                      <span className={`file-preview-icon ${iconClass(file.type || "")}`}>
+                        {fileIcon(file.type || file.name)}
+                      </span>
+                      <span className="file-preview-text">
+                        <strong>{file.name}</strong><br />
+                        <small>{formatFileSize(file.size)}</small>
+                      </span>
+                    </p>
                   ) : (
                     <p>ลากไฟล์มาวางหรือคลิกเพื่อเลือก</p>
                   )}

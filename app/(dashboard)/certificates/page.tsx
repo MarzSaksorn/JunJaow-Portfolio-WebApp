@@ -10,6 +10,7 @@ export default function CertificatesPage() {
           <h1>ทุกความสำเร็จ เก็บไว้ในไฟล์</h1>
         </div>
         <div className="ws-header-actions">
+          <Link className="btn btn-secondary" href="/certificates/bulk" style={{ marginRight: 8 }}>อัปโหลดหลายไฟล์</Link>
           <Link className="btn btn-primary" href="/certificates/new">อัปโหลดไฟล์</Link>
         </div>
       </header>

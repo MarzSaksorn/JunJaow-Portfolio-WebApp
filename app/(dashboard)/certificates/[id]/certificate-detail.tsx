@@ -6,15 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { logActivity } from "@/lib/activity";
+import { fileIcon, iconClass, formatFileSize } from "@/lib/file-icons";
 import {
-  FilePdf,
-  Image,
-  FileText,
-  File,
   DownloadSimple,
   PencilLine,
   Trash,
   ArrowLeft,
+  ArrowClockwise,
+  ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
 
@@ -27,23 +26,6 @@ const dotTagColor = (tag: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const fileIconClass = (type: string) => {
-  const t = (type || "").toUpperCase();
-  if (t.includes("PDF")) return "pdf";
-  if (t.includes("IMAGE") || t.includes("PNG") || t.includes("JPG") || t.includes("JPEG")) return "image";
-  if (t.includes("DOC") || t.includes("WORD")) return "doc";
-  return "other";
-};
-
-const fileIcon = (type: string, large?: boolean) => {
-  const size = large ? 32 : 20;
-  const t = (type || "").toUpperCase();
-  if (t.includes("PDF")) return <FilePdf weight="duotone" size={size} />;
-  if (t.includes("IMAGE") || t.includes("PNG") || t.includes("JPG") || t.includes("JPEG")) return <Image weight="duotone" size={size} />;
-  if (t.includes("DOC") || t.includes("WORD")) return <FileText weight="duotone" size={size} />;
-  return <File weight="duotone" size={size} />;
-};
-
 export function CertificateDetail() {
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -51,6 +33,7 @@ export function CertificateDetail() {
   const id = params.id as string;
 
   const [certificate, setCertificate] = useState<Certificate | null>(null);
+  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -103,6 +86,8 @@ export function CertificateDetail() {
   if (!certificate) return null;
 
   const isImage = certificate.file_type?.startsWith("image/");
+  const isPdf = certificate.file_type?.includes("pdf") || certificate.file_name?.toLowerCase().endsWith(".pdf");
+  const fileSize = certificate.file_size ? formatFileSize(certificate.file_size) : null;
 
   return (
     <div ref={rootRef}>
@@ -114,6 +99,20 @@ export function CertificateDetail() {
               : "ประกาศนียบัตร"}
           </p>
           <h1 style={{ fontSize: "clamp(24px, 2.8vw, 38px)" }}>{certificate.title}</h1>
+        </div>
+        <div className="ws-header-actions">
+          <Link className="btn btn-secondary" href="/certificates">
+            <ArrowLeft weight="duotone" /> กลับ
+          </Link>
+          <Link
+            href={`/certificates/${certificate.id}/edit`}
+            className="btn btn-secondary"
+          >
+            <PencilLine weight="duotone" /> แก้ไข
+          </Link>
+          <button className="btn btn-danger" onClick={handleDelete}>
+            <Trash weight="duotone" /> ลบ
+          </button>
         </div>
       </header>
 
@@ -133,6 +132,70 @@ export function CertificateDetail() {
                 <p>{certificate.description}</p>
               </div>
             )}
+
+            <div className="detail-media" data-entrance-preview>
+              {isImage && certificate.file_url ? (
+                <div className="detail-img-rotate">
+                  <img
+                    src={certificate.file_url}
+                    alt={certificate.title}
+                    className="detail-image"
+                    style={{ transform: `rotate(${rotation}deg)` }}
+                    loading="lazy"
+                  />
+                  <div className="detail-rotate-actions">
+                    <button className="btn-rotate" onClick={() => setRotation(r => r - 90)} title="หมุนซ้าย">
+                      <ArrowCounterClockwise weight="duotone" size={16} />
+                    </button>
+                    <span className="rotate-label">{rotation}°</span>
+                    <button className="btn-rotate" onClick={() => setRotation(r => r + 90)} title="หมุนขวา">
+                      <ArrowClockwise weight="duotone" size={16} />
+                    </button>
+                  </div>
+                </div>
+              ) : isPdf && certificate.file_url ? (
+                <div className="detail-pdf-wrap">
+                  <iframe
+                    src={`${certificate.file_url}#view=FitH`}
+                    title={certificate.title}
+                    className="detail-pdf"
+                    loading="lazy"
+                  />
+                  <a
+                    href={certificate.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ marginTop: 8, width: "100%", justifyContent: "center" }}
+                  >
+                    <DownloadSimple weight="duotone" /> ดาวน์โหลด PDF
+                  </a>
+                </div>
+              ) : (
+                <div className="file-fallback">
+                  <div className={`file-fallback-icon ${iconClass(certificate.file_type || "")}`}>
+                    {fileIcon(certificate.file_type || "", true)}
+                  </div>
+                  {certificate.file_name && (
+                    <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8 }}>
+                      {certificate.file_name}
+                      {fileSize ? ` (${fileSize})` : ""}
+                    </p>
+                  )}
+                  {certificate.file_url && (
+                    <a
+                      href={certificate.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                      style={{ marginTop: 8 }}
+                    >
+                      <DownloadSimple weight="duotone" /> ดาวน์โหลดไฟล์
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
 
             {certificate.issued_at && (
               <div className="detail-row">
@@ -163,48 +226,6 @@ export function CertificateDetail() {
               <div className="detail-row">
                 <span className="detail-label">ไฟล์</span>
                 <p>{certificate.file_name}</p>
-              </div>
-            )}
-
-            <div className="detail-actions">
-              <Link
-                href={`/certificates/${certificate.id}/edit`}
-                className="btn btn-secondary"
-              >
-                <PencilLine weight="duotone" /> แก้ไข
-              </Link>
-              <button className="btn btn-secondary" onClick={handleDelete}>
-                <Trash weight="duotone" /> ลบ
-              </button>
-              <Link className="btn btn-secondary" href="/certificates">
-                <ArrowLeft weight="duotone" /> กลับ
-              </Link>
-            </div>
-          </div>
-
-          <div className="detail-media" data-entrance-preview>
-            {isImage && certificate.file_url ? (
-              <img
-                src={certificate.file_url}
-                alt={certificate.title}
-                className="detail-image"
-                loading="lazy"
-              />
-            ) : (
-              <div className="file-fallback">
-                <div className={`file-fallback-icon ${fileIconClass(certificate.file_type || "")}`}>
-                  {fileIcon(certificate.file_type || "", true)}
-                </div>
-                {certificate.file_url && (
-                  <a
-                    href={certificate.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                  >
-                    <DownloadSimple weight="duotone" /> ดาวน์โหลดไฟล์
-                  </a>
-                )}
               </div>
             )}
           </div>

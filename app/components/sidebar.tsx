@@ -12,6 +12,7 @@ import {
   CalendarBlank,
   User,
   Folder,
+  GearSix,
   SignOut,
   CaretLeft,
   CaretRight,
@@ -23,6 +24,7 @@ const icons: Record<string, React.ReactNode> = {
   "/years": <CalendarBlank weight="duotone" />,
   "/profile": <User weight="duotone" />,
   "/portfolio": <Folder weight="duotone" />,
+  "/settings": <GearSix weight="duotone" />,
 };
 
 export function Sidebar() {
@@ -53,6 +55,7 @@ export function Sidebar() {
     { href: "/years", label: "ปีการศึกษา", desc: "แยกตามปีที่เรียน" },
     { href: "/profile", label: "ข้อมูลส่วนตัว", desc: "ประวัติและทักษะ" },
     { href: "/portfolio", label: "พอร์ตโฟลิโอ", desc: "สร้างหน้ารวมผลงาน" },
+    { href: "/settings", label: "ตั้งค่า", desc: "ธีมสีและการตั้งค่า" },
   ];
 
   function isActive(href: string) {

@@ -10,13 +10,10 @@ import {
   FolderOpen,
   CalendarBlank,
   User,
-  FilePdf,
-  Image,
-  FileText,
-  File,
   ArrowRight,
   ClockCounterClockwise,
 } from "@phosphor-icons/react";
+import { fileIcon, iconClass } from "@/lib/file-icons";
 import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
@@ -42,22 +39,6 @@ const dotTagColor = (cat: string | null) => {
   let hash = 0;
   for (let i = 0; i < cat.length; i++) hash = ((hash << 5) - hash) + cat.charCodeAt(i);
   return colors[Math.abs(hash) % colors.length];
-};
-
-const certIconClass = (type: string) => {
-  const t = (type || "").toUpperCase();
-  if (t.includes("PDF")) return "pdf";
-  if (t.includes("IMAGE") || t.includes("PNG") || t.includes("JPG") || t.includes("JPEG")) return "image";
-  if (t.includes("DOC") || t.includes("WORD")) return "doc";
-  return "other";
-};
-
-const certIcon = (type: string) => {
-  const t = (type || "").toUpperCase();
-  if (t.includes("PDF")) return <FilePdf weight="duotone" />;
-  if (t.includes("IMAGE") || t.includes("PNG") || t.includes("JPG") || t.includes("JPEG")) return <Image weight="duotone" />;
-  if (t.includes("DOC") || t.includes("WORD")) return <FileText weight="duotone" />;
-  return <File weight="duotone" />;
 };
 
 export function DashboardClient() {
@@ -240,8 +221,8 @@ export function DashboardClient() {
                     >
                       <div className={`cert-card-tab ${yearBorderClasses[cert.academic_year || ""] || "clip-border"}`} />
                       <div className="cert-card-body">
-                        <div className={`cert-card-icon ${certIconClass(cert.file_type || "")}`}>
-                          {certIcon(cert.file_type || "")}
+                        <div className={`cert-card-icon ${iconClass(cert.file_type || "")}`}>
+                          {fileIcon(cert.file_type || "")}
                         </div>
                         <div className="cert-card-info">
                           <h4>{cert.title}</h4>
