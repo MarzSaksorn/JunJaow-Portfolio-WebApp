@@ -819,6 +819,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings: {
+        Row: {
+          id: string
+          key: string
+          value: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          value: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          value?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       saved_places: {
         Row: {
           id: string

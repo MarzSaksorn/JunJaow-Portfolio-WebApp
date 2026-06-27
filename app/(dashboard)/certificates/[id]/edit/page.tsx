@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
+import { logActivity } from "@/lib/activity";
 
 const years = ["2569", "2570", "2571", "2572"];
 const categories = [
@@ -103,6 +104,10 @@ export default function EditCertificatePage({
       setLoading(false);
       return;
     }
+
+    logActivity("cert_updated", "certificate", id, {
+      title: form.title,
+    });
 
     router.push(`/certificates/${id}`);
   }

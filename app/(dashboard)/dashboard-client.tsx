@@ -15,10 +15,19 @@ import {
   FileText,
   File,
   ArrowRight,
+  ClockCounterClockwise,
 } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
+type Activity = {
+  id: string;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+};
 
 const yearBorderClasses: Record<string, string> = {
   "2569": "clip-border",
@@ -61,17 +70,20 @@ export function DashboardClient() {
     recentCerts: [] as Certificate[],
     profileCompletion: 0,
   });
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const years = ["2569", "2570", "2571", "2572"];
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      setLoading(true);
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
 
-      const [{ count: totalCertificates }, { count: recentCount }, yearResult, { count: portfolioCount }, { data: recentCerts }, { data: profile }] =
+      const [{ count: totalCertificates }, { count: recentCount }, yearResult, { count: portfolioCount }, { data: recentCerts }, { data: profile }, activityRes] =
         await Promise.all([
           supabase.from("certificates").select("*", { count: "exact", head: true }).eq("owner_id", user.id),
           supabase.from("certificates").select("*", { count: "exact", head: true }).eq("owner_id", user.id).gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
@@ -79,6 +91,7 @@ export function DashboardClient() {
           supabase.from("portfolio_pages").select("*", { count: "exact", head: true }).eq("owner_id", user.id),
           supabase.from("certificates").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }).limit(5),
           supabase.from("profiles").select("*").eq("owner_id", user.id).single(),
+          supabase.from("activity_log").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }).limit(10),
         ]);
 
       if (cancelled) return;
@@ -100,6 +113,8 @@ export function DashboardClient() {
         recentCerts: recentCerts || [],
         profileCompletion,
       });
+      setActivities((activityRes.data || []) as Activity[]);
+      setLoading(false);
     }
     load();
     return () => { cancelled = true; };
@@ -245,10 +260,46 @@ export function DashboardClient() {
                   ))
                 )}
               </div>
+          </div>
+
+          <div className="panel-header" style={{ marginTop: 24, marginBottom: 12 }}>
+            <div>
+              <p className="ws-eyebrow">กิจกรรมล่าสุด</p>
+              <h3>การเปลี่ยนแปลงล่าสุด</h3>
             </div>
           </div>
 
-          <div className="desk-actions" data-entrance-panel>
+          <div style={{ display: "grid", gap: 6 }}>
+            {loading ? (
+              <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: 8 }}>กำลังโหลด...</p>
+            ) : activities.length === 0 ? (
+              <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: 8 }}>ยังไม่มีกิจกรรม</p>
+            ) : (
+              activities.map((a) => (
+                <div key={a.id} className="activity-row">
+                  <ClockCounterClockwise weight="duotone" size={16} />
+                  <span className="activity-action">
+                    {a.action === "cert_created" && "เพิ่ม"}
+                    {a.action === "cert_updated" && "แก้ไข"}
+                    {a.action === "cert_deleted" && "ลบ"}
+                    {a.target_type === "certificate" && " ประกาศนียบัตร"}
+                    {(a.details as { title?: string })?.title && (
+                      <>: {(a.details as { title: string }).title}</>
+                    )}
+                  </span>
+                  <span className="activity-time">
+                    {new Date(a.created_at).toLocaleDateString("th-TH", {
+                      day: "numeric", month: "short",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="desk-actions" data-entrance-panel>
             <Link className="desk-action" href="/portfolio">
               <div className="desk-action-icon"><FolderOpen weight="duotone" /></div>
               <div className="desk-action-text">

@@ -46,16 +46,19 @@ export default function LoginPage() {
   return (
     <main className="login-page" ref={rootRef}>
       <div className="login-card" data-entrance-scale>
+        <div className="login-card-clip" />
+
         <div className="login-header">
-          <div className="binder-mark" style={{ width: 48, height: 48, fontSize: 22 }}>Jj</div>
+          <div className="login-emblem">Jj</div>
           <h1>โต๊ะพอร์ตโฟลิโอ</h1>
-          <p className="ws-eyebrow" style={{ textAlign: "center" }}>พื้นที่ส่วนตัวของ Jj</p>
+          <p className="login-subtitle">พื้นที่ส่วนตัวของคุณ</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit} data-entrance-form>
-          <div className="form-field">
-            <label>อีเมล</label>
+          <div className="login-field">
+            <label htmlFor="email">อีเมล</label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -64,9 +67,10 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="form-field">
-            <label>รหัสผ่าน</label>
+          <div className="login-field">
+            <label htmlFor="password">รหัสผ่าน</label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +82,7 @@ export default function LoginPage() {
 
           {error && <p className="login-error">{error}</p>}
 
-          <button className="btn btn-primary btn-full btn-lg" type="submit" disabled={loading}>
+          <button className="login-submit" type="submit" disabled={loading}>
             {loading
               ? "โปรดรอ..."
               : mode === "login"

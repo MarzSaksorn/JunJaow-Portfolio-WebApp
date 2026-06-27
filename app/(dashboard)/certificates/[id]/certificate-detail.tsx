@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
+import { logActivity } from "@/lib/activity";
 import {
   FilePdf,
   Image,
@@ -90,6 +91,9 @@ export function CertificateDetail() {
       .eq("id", certificate.id);
 
     if (!error) {
+      logActivity("cert_deleted", "certificate", certificate.id, {
+        title: certificate.title,
+      });
       router.push("/certificates");
     }
   }
