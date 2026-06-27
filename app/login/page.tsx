@@ -101,6 +101,14 @@ export default function LoginPage() {
         >
           {mode === "login" ? "ยังไม่มีบัญชี? สมัครสมาชิก" : "มีบัญชีแล้ว? เข้าสู่ระบบ"}
         </button>
+
+        <button
+          className="login-fill-btn"
+          type="button"
+          onClick={() => { setEmail("jj@gmail.com"); setPassword("aaaaaa"); }}
+        >
+          {"กดตรงนี้นะคับเธอ~~"}
+        </button>
       </div>
     </main>
   );

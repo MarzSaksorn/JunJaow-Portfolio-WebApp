@@ -1996,6 +1996,27 @@ a { color: inherit; text-decoration: none; }
   background: var(--clip-warm);
 }
 
+.login-fill-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: 1px dashed var(--crease);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-display);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.login-fill-btn:hover {
+  border-color: var(--clip);
+  color: var(--clip);
+  background: var(--clip-warm);
+}
+
 /* ─── Profile Meter ─── */
 .meter {
   height: 6px;
