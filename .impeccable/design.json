@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-27T16:50:00.000Z",
+  "title": "Design System: Jj Portfolio Manager",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Graphite", "canonical": "oklch(0.13 0 0)", "tonalRamp": ["oklch(0.13 0 0)", "oklch(0.22 0 0)", "oklch(0.32 0 0)", "oklch(0.42 0 0)", "oklch(0.55 0 0)", "oklch(0.69 0 0)", "oklch(0.80 0 0)", "oklch(0.91 0 0)"] },
+      "paper": { "role": "neutral", "displayName": "Greige Paper", "canonical": "oklch(0.97 0.002 270)", "tonalRamp": ["oklch(0.97 0.002 270)", "oklch(0.94 0.003 270)", "oklch(0.91 0.004 270)", "oklch(0.86 0.005 270)", "oklch(0.78 0.005 270)", "oklch(0.69 0.005 270)", "oklch(0.55 0.005 270)", "oklch(0.32 0.005 270)"] },
+      "accent": { "role": "primary", "displayName": "Violet Gallery", "canonical": "oklch(0.55 0.22 300)", "tonalRamp": ["oklch(0.25 0.18 300)", "oklch(0.35 0.20 300)", "oklch(0.45 0.22 300)", "oklch(0.55 0.22 300)", "oklch(0.65 0.20 300)", "oklch(0.75 0.16 300)", "oklch(0.85 0.10 300)", "oklch(0.95 0.04 300)"] },
+      "accent-dark": { "role": "primary", "displayName": "Violet Sky", "canonical": "oklch(0.72 0.18 300)", "tonalRamp": ["oklch(0.30 0.16 300)", "oklch(0.40 0.18 300)", "oklch(0.52 0.20 300)", "oklch(0.62 0.20 300)", "oklch(0.72 0.18 300)", "oklch(0.80 0.14 300)", "oklch(0.88 0.08 300)", "oklch(0.95 0.03 300)"] }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "All body text, paragraphs, descriptions, form values." },
+      "label": { "displayName": "Label", "purpose": "Form labels, button text, nav items." },
+      "title": { "displayName": "Title", "purpose": "Card titles, panel headings." },
+      "data": { "displayName": "Data", "purpose": "Eyebrow labels, tags, filter chips, stat numbers." }
+    },
+    "shadows": [
+      { "name": "hover-lift", "value": "0 12px 40px rgba(9, 9, 11, 0.12)", "purpose": "Card and button hover state lift." },
+      { "name": "hover-lift-dark", "value": "0 1px 3px rgba(0, 0, 0, 0.3)", "purpose": "Card hover lift in dark mode." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default easing for all state transitions." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Hover, focus, active transitions." },
+      { "name": "duration-base", "value": "200ms", "purpose": "Standard transitions." },
+      { "name": "duration-slow", "value": "300ms", "purpose": "Entrance animations." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "720px" },
+      { "name": "md", "value": "1080px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action. Used for upload, save, create portfolio.",
+      "html": "<button class=\"ds-btn-primary\">อัปโหลดไฟล์</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border: 0; border-radius: 999px; background: #09090b; color: #fff; font-family: Mali, ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 150ms cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 1px 3px rgba(9,9,11,0.05); } .ds-btn-primary:hover { background: #27272a; box-shadow: 0 4px 12px rgba(9,9,11,0.08); transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; border-radius: 8px; } .ds-btn-primary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action. Used for cancel, back, browse.",
+      "html": "<button class=\"ds-btn-secondary\">ยกเลิก</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border: 1px solid #e4e4e7; border-radius: 999px; background: rgba(255,255,255,0.82); color: #18181b; font-family: Mali, ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-secondary:hover { background: #f4f4f5; border-color: #d4d4d8; transform: translateY(-1px); } .ds-btn-secondary:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; border-radius: 8px; } .ds-btn-secondary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard text input for forms.",
+      "html": "<input class=\"ds-input\" placeholder=\"ชื่อประกาศนียบัตร\">",
+      "css": ".ds-input { padding: 12px 14px; border: 1px solid #e4e4e7; border-radius: 12px; background: #ffffff; color: #18181b; font-family: Mali, ui-sans-serif, system-ui, sans-serif; font-size: 15px; width: 100%; transition: border-color 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px #f5f3ff; outline: none; } .ds-input::placeholder { color: #a1a1aa; }"
+    },
+    {
+      "name": "Standard Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Primary container for content panels, detail sections, sidebar panels.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-eyebrow\">คลังอัจฉริยะ</div><div class=\"ds-card-heading\">ประกาศนียบัตรตามปีการศึกษา</div><p class=\"ds-card-body\">อัปโหลดรูปภาพหรือเอกสาร ติดป้ายปีการศึกษาไทย</p></div>",
+      "css": ".ds-card { padding: 22px; border: 1px solid #e4e4e7; border-radius: 14px; background: #ffffff; transition: box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-card:hover { box-shadow: 0 12px 40px rgba(9,9,11,0.12); transform: translateY(-1px); } .ds-card-eyebrow { font-family: SFMono-Regular, Consolas, Liberation Mono, monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #71717a; margin: 0 0 6px; } .ds-card-heading { font-family: Mali, ui-sans-serif, system-ui, sans-serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; margin: 0; } .ds-card-body { font-family: Mali, ui-sans-serif, system-ui, sans-serif; font-size: 15px; line-height: 1.65; color: #71717a; margin: 8px 0 0; }"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "sidebar",
+      "description": "Primary navigation. Sticky sidebar with icon+label items.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-active\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 256 256\"><path d=\"M218.83 103.77l-80-75.5a1 1 0 00-.11-.11 16 16 0 00-21.53 0l-.11.11-79.91 75.5A16 16 0 0048 115.55V208a16 16 0 0016 16h32a16 16 0 0016-16V160h32v48a16 16 0 0016 16h32a16 16 0 0016-16v-92.45a16 16 0 005.17-11.78 15.89 15.89 0 00-4.34-11z\" fill=\"currentColor\"/></svg> แดชบอร์ด</a><a class=\"ds-nav-item\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 256 256\"><path d=\"M216 40H40a16 16 0 00-16 16v144a16 16 0 0016 16h176a16 16 0 0016-16V56a16 16 0 00-16-16zm0 160H40V56h176v144z\" fill=\"currentColor\"/></svg> ประกาศนียบัตร</a></nav>",
+      "css": ".ds-nav { display: grid; gap: 4px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid transparent; border-radius: 12px; color: rgba(255,255,255,0.6); font-family: Mali, ui-sans-serif, system-ui, sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 150ms cubic-bezier(0.22, 1, 0.36, 1); text-decoration: none; } .ds-nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); } .ds-nav-active { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.08); color: #fff; } .ds-nav-item svg { flex-shrink: 0; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "filter-chip",
+      "description": "Toggleable filter in certificate archive sidebar and panel actions.",
+      "html": "<button class=\"ds-chip\">ปีการศึกษา</button><button class=\"ds-chip ds-chip-active\">วิชาการ</button>",
+      "css": ".ds-chip { padding: 8px 10px; border: 1px solid #e4e4e7; border-radius: 999px; background: #ffffff; color: #71717a; font-family: SFMono-Regular, Consolas, Liberation Mono, monospace; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-chip:hover { border-color: #7c3aed; color: #7c3aed; } .ds-chip-active { background: #09090b; color: #fff; border-color: #09090b; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "stat-card",
+      "description": "Dashboard metric card showing a number with label and trend.",
+      "html": "<div class=\"ds-stat\"><p class=\"ds-stat-label\">ประกาศนียบัตร</p><strong class=\"ds-stat-value\">42</strong><span class=\"ds-stat-trend\">+3 เดือนนี้</span></div>",
+      "css": ".ds-stat { padding: 22px; border: 1px solid #e4e4e7; border-radius: 14px; background: #ffffff; transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-stat:hover { box-shadow: 0 4px 12px rgba(9,9,11,0.08); transform: translateY(-2px); } .ds-stat-label { margin: 0; font-family: SFMono-Regular, Consolas, Liberation Mono, monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #71717a; } .ds-stat-value { display: block; margin: 14px 0 6px; font-family: SFMono-Regular, Consolas, Liberation Mono, monospace; font-size: clamp(28px, 3vw, 42px); letter-spacing: -0.05em; color: #18181b; } .ds-stat-trend { margin: 0; font-size: 13px; color: #71717a; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Velvet Notebook",
+    "overview": "A polished personal journal for achievements — tactile, warm, proudly individual. The interface combines the focused utility of a productivity tool with the personality of a curated notebook.",
+    "keyCharacteristics": [
+      "Single sans-serif family (Mali) throughout — warm and playful, with handwritten character",
+      "Purple accent on a neutral ground; the accent appears on ≤10% of any screen",
+      "Flat surfaces with purposeful lift on hover — no resting shadows",
+      "Generous rounded corners (14–20px) that feel soft but confident",
+      "Phosphor duotone icons for consistent visual vocabulary",
+      "Thai-language UI entirely — the language is part of the brand"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "The accent appears on ≤10% of any given screen. Its rarity is the point — when violet appears, it signals interactivity, current state, or a file-type association.", "section": "colors" },
+      { "name": "The One-Family Rule", "body": "Mali carries every role — heading, body, button, label — with no display/body pairing. The only exception is the monospace data tier for small metadata labels.", "section": "typography" },
+      { "name": "The Flat-by-Default Rule", "body": "No surface has a shadow at rest. Shadows appear only as a response to hover or active state. The app depth is read through tonal layering and border contrast.", "section": "elevation" }
+    ],
+    "dos": [
+      "Use violet as the single accent color. Limit it to interactive states, file icons, focus rings, and filter selections.",
+      "Use Mali for every text element — headings, body, buttons, labels, navigation. The only exception is monospace data labels (eyebrow text, tags, stats).",
+      "Keep surfaces flat. Cards, panels, and containers have no shadow at rest.",
+      "Use Phosphor duotone icons throughout. Never mix icon families.",
+      "Write all UI text in Thai. The language is part of the brand identity.",
+      "Respect prefers-reduced-motion — all animations must have a zero-duration fallback.",
+      "Keep form controls consistent: same radius, padding, border, focus treatment everywhere."
+    ],
+    "donts": [
+      "Use gradient backgrounds or gradient text (background-clip: text). Single solid colors only.",
+      "Use blue as an accent. The palette is violet-purple.",
+      "Add orchestrated page-load animations or entrance choreography. Motion is for state feedback only.",
+      "Use AI-sounding copy — no 'unlock your potential', 'elevate', 'supercharge'. Direct Thai copy only.",
+      "Use side-stripe borders (border-left >1px as decoration).",
+      "Use glassmorphism, numbered section markers (01/02/03), or card-grid-with-icon-heading-body patterns.",
+      "Mix radii — 999px for buttons, 12–14px for cards, 8px for inputs. No 32px+ cards.",
+      "Place shadows on the same element that has a 1px border decoration. Pick one."
+    ]
+  }
+}
