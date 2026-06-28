@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
-import { MagnifyingGlass, ListDashes, CheckCircle, Trash, FilePdf } from "@phosphor-icons/react";
+import { MagnifyingGlass, ListDashes, CheckCircle, Trash, FilePdf, GearSix, ArrowRight } from "@phosphor-icons/react";
 import { TEMPLATES } from "@/app/components/portfolio-templates";
 import type { TemplateType } from "@/app/components/portfolio-templates";
 import type { Database } from "@/lib/supabase/types";
@@ -78,9 +78,7 @@ export function PortfolioGenerator() {
     setSelectedIds(ids);
   }
 
-  function handleDragStart(idx: number) {
-    setDragIdx(idx);
-  }
+  function handleDragStart(idx: number) { setDragIdx(idx); }
 
   function handleDragOver(e: React.DragEvent, idx: number) {
     e.preventDefault();
@@ -89,9 +87,7 @@ export function PortfolioGenerator() {
     setDragIdx(idx);
   }
 
-  function handleDragEnd() {
-    setDragIdx(null);
-  }
+  function handleDragEnd() { setDragIdx(null); }
 
   const filteredCerts = certSearch
     ? certificates.filter(
@@ -157,7 +153,6 @@ export function PortfolioGenerator() {
     setTitle("");
     setSelectedIds([]);
 
-    // reload pages
     const { data: freshPages } = await supabase
       .from("portfolio_pages").select("*").eq("owner_id", user.id).order("created_at", { ascending: false });
     if (freshPages) setPortfolioPages(freshPages);
@@ -173,73 +168,53 @@ export function PortfolioGenerator() {
 
   useEntranceAnimation(rootRef);
 
-  const completionPercent = profile
+  const completionPct = profile
     ? [profile.full_name, profile.school, profile.bio, profile.skills?.length, profile.activities?.length]
         .filter(Boolean).length * 20
     : 0;
 
   return (
     <div ref={rootRef}>
-      <div className="portfolio-setup">
-        <div className="panel" data-entrance-panel>
-          <p className="ws-eyebrow">ความพร้อมของโปรไฟล์</p>
-          <div className="meter" style={{ marginTop: 12 }}>
-            <span className="meter-fill" style={{ width: `${completionPercent}%` }} />
-          </div>
-          <span className="meter-label">{completionPercent}% พร้อม</span>
-          {(!profile || !profile.full_name) && (
-            <Link className="btn btn-secondary btn-full" href="/profile" style={{ marginTop: 12 }}>
-              กรอกโปรไฟล์ก่อน
-            </Link>
-          )}
-        </div>
-
-        <div className="panel" data-entrance-panel>
-          <p className="ws-eyebrow">สร้าง</p>
-          <h3 style={{ margin: 0 }}>พอร์ตโฟลิโอใหม่</h3>
-
-          <div className="form-field" style={{ marginTop: 12 }}>
-            <label>ชื่อพอร์ตโฟลิโอ</label>
+      <div className="pw-layout">
+        <div className="pw-main" data-entrance-panel>
+          <div className="pw-field">
+            <label className="pw-label">ตั้งชื่อพอร์ตโฟลิโอ</label>
             <input
-              className="form-input"
+              className="pw-title-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น พอร์ต Admission 2572"
             />
           </div>
 
-          <div className="form-field" style={{ marginTop: 12 }}>
-            <label>แม่แบบ</label>
-            <div className="template-selector">
+          <div className="pw-field">
+            <label className="pw-label">แม่แบบ</label>
+            <div className="pw-templates">
               {TEMPLATES.map((t) => (
                 <button
                   key={t.id}
-                  className={`template-card${template === t.id ? " active" : ""}`}
+                  className={`pw-template${template === t.id ? " active" : ""}`}
                   onClick={() => setTemplate(t.id)}
                   type="button"
                 >
-                  <div className="template-card-preview">
-                    <div className={`template-card-icon template-icon-${t.id}`} />
-                  </div>
-                  <div className="template-card-body">
+                  <div className={`pw-template-icon template-icon-${t.id}`} />
+                  <div className="pw-template-body">
                     <strong>{t.name}</strong>
                     <p>{t.desc}</p>
                   </div>
                   {template === t.id && (
-                    <span className="template-check">
-                      <CheckCircle weight="fill" size={16} />
-                    </span>
+                    <CheckCircle weight="fill" size={16} className="pw-template-check" />
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="form-field" style={{ marginTop: 12 }}>
-            <label>ส่วนที่แสดง</label>
-            <div className="section-toggles">
+          <div className="pw-field">
+            <label className="pw-label">ส่วนที่แสดง</label>
+            <div className="pw-toggles">
               {(["skills", "activities", "contact", "bio"] as const).map((s) => (
-                <label key={s} className="task-check">
+                <label key={s} className="pw-toggle">
                   <input
                     type="checkbox"
                     checked={sections[s]}
@@ -251,140 +226,150 @@ export function PortfolioGenerator() {
             </div>
           </div>
 
-          {error && <p className="form-error" style={{ marginTop: 8 }}>{error}</p>}
-
-          <div className="form-field" style={{ marginTop: 8 }}>
-            <label>ค้นหาประกาศนียบัตร</label>
-            <div className="search-field" style={{ marginTop: 4 }}>
-              <MagnifyingGlass weight="duotone" size={16} style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
+          <div className="pw-field">
+            <label className="pw-label">เลือกประกาศนียบัตร</label>
+            <div className="pw-search">
+              <MagnifyingGlass weight="duotone" size={15} />
               <input
                 type="text"
                 value={certSearch}
                 onChange={(e) => setCertSearch(e.target.value)}
                 placeholder="พิมพ์ชื่อหรือผู้ออก..."
-                style={{ border: "none", background: "transparent", flex: 1, outline: "none", fontSize: 13 }}
               />
+            </div>
+            <div className="pw-certs" data-entrance>
+              {filteredCerts.length === 0 && (
+                <p style={{ color: "var(--ink-muted)", fontSize: 13, padding: "8px 0" }}>
+                  {certSearch ? "ไม่พบประกาศนียบัตรที่ค้นหา" : "ยังไม่มีประกาศนียบัตร"}
+                </p>
+              )}
+              {filteredCerts.map((cert) => {
+                const isSelected = selectedIds.includes(cert.id);
+                const sortIdx = selectedIds.indexOf(cert.id);
+                return (
+                  <label
+                    key={cert.id}
+                    className={`pw-cert${isSelected ? " selected" : ""}`}
+                    draggable={isSelected}
+                    onDragStart={() => isSelected && handleDragStart(sortIdx)}
+                    onDragOver={(e) => isSelected && handleDragOver(e, sortIdx)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleCert(cert.id)}
+                    />
+                    {isSelected && (
+                      <span className="pw-cert-grip" title="ลากเพื่อเรียงลำดับ">
+                        <ListDashes weight="duotone" size={13} />
+                      </span>
+                    )}
+                    <div className="pw-cert-info">
+                      <strong>{cert.title}</strong>
+                      <p>{cert.issuer}</p>
+                    </div>
+                    {isSelected && (
+                      <span className="pw-cert-num">{sortIdx + 1}</span>
+                    )}
+                  </label>
+                );
+              })}
             </div>
           </div>
 
-          <div className="cert-checklist" data-entrance>
-            {filteredCerts.length === 0 && (
-              <p style={{ color: "var(--ink-muted)", fontSize: 13 }}>
-                {certSearch ? "ไม่พบประกาศนียบัตรที่ค้นหา" : "ยังไม่มีประกาศนียบัตร"}
-              </p>
-            )}
-            {filteredCerts.map((cert) => {
-              const isSelected = selectedIds.includes(cert.id);
-              const sortIdx = selectedIds.indexOf(cert.id);
-              return (
-                <label
-                  key={cert.id}
-                  className={`cert-check${isSelected ? " selected" : ""}`}
-                  draggable={isSelected}
-                  onDragStart={() => isSelected && handleDragStart(sortIdx)}
-                  onDragOver={(e) => isSelected && handleDragOver(e, sortIdx)}
-                  onDragEnd={handleDragEnd}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleCert(cert.id)}
-                  />
-                  {isSelected && (
-                    <span className="cert-check-grip" title="ลากเพื่อเรียงลำดับ">
-                      <ListDashes weight="duotone" size={14} />
-                    </span>
-                  )}
-                  <div>
-                    <strong>{cert.title}</strong>
-                    <p>{cert.issuer}</p>
-                  </div>
-                  {isSelected && (
-                    <span className="cert-check-order">{sortIdx + 1}</span>
-                  )}
-                </label>
-              );
-            })}
-          </div>
+          {error && <p className="form-error">{error}</p>}
+          {saved && (
+            <p className="form-success">
+              <CheckCircle weight="fill" size={14} /> สร้างพอร์ตโฟลิโอสำเร็จ
+            </p>
+          )}
 
           <button
             className="btn btn-primary btn-full"
             onClick={generatePortfolio}
             disabled={saving}
-            style={{ marginTop: 12 }}
           >
             {saving ? "กำลังสร้าง..." : "สร้างหน้าพอร์ตโฟลิโอ"}
           </button>
-
-          {saved && (
-            <p className="form-success" style={{ marginTop: 8 }}>
-              <CheckCircle weight="fill" size={14} /> สร้างพอร์ตโฟลิโอสำเร็จ
-            </p>
-          )}
         </div>
-      </div>
 
-      {portfolioPages.length > 0 && (
-        <div className="portfolio-list" data-entrance>
-          <h3>พอร์ตโฟลิโอที่บันทึกแล้ว</h3>
-          <div className="portfolio-list-scroll">
-          {portfolioPages.map((page) => (
-            <div className="panel" key={page.id}>
-              <div className="portfolio-list-head">
-                <Link href={`/portfolio/${page.id}`} className="portfolio-list-link">
-                  <h4 style={{ margin: 0 }}>{page.title}</h4>
-                  <p style={{ margin: "4px 0", color: "var(--ink-muted)", fontSize: 13 }}>
-                    {page.selected_certificate_ids?.length || 0} รายการ
-                    {(() => {
-                      const snap = page.content_snapshot as any;
-                      const t = snap?.template || "modern";
-                      return <> · {TEMPLATES.find((x) => x.id === t)?.name || t}</>;
-                    })()}
-                  </p>
-                  <p style={{ margin: 0, color: "var(--ink-faint)", fontSize: 12 }}>
-                    สร้างเมื่อ {new Date(page.created_at || "").toLocaleDateString()}
-                  </p>
-                </Link>
-                <button
-                  className="btn btn-sm btn-secondary"
-                  style={{ flexShrink: 0 }}
-                  onClick={async () => {
-                    try {
-                      const res = await fetch("/api/portfolio/export", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ portfolioId: page.id }),
-                      });
-                      if (!res.ok) throw new Error();
-                      const blob = await res.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `portfolio-${page.id}.pdf`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    } catch {
-                      setShowPdfError(true);
-                    }
-                  }}
-                  aria-label="ดาวน์โหลด PDF"
-                >
-                  <FilePdf weight="duotone" size={14} />
-                </button>
-                <button
-                  className="btn btn-sm btn-ghost"
-                  style={{ color: "var(--ink-faint)", flexShrink: 0 }}
-                  onClick={() => setShowDeletePage(page)}
-                  aria-label="ลบ"
-                >
-                  <Trash weight="duotone" size={14} />
-                </button>
+        <aside className="pw-side" data-entrance-panel>
+          <div className="pw-meter">
+            <div className="pw-meter-accent" />
+            <p className="ws-eyebrow">ความพร้อม</p>
+            <div className="meter" style={{ marginTop: 10 }}>
+              <span className="meter-fill" style={{ width: `${completionPct}%` }} />
+            </div>
+            <span className="meter-label">{completionPct}% พร้อมสร้าง</span>
+            {(!profile || !profile.full_name) && (
+              <Link className="btn btn-secondary btn-full" href="/profile" style={{ marginTop: 12 }}>
+                กรอกโปรไฟล์ก่อน
+              </Link>
+            )}
+          </div>
+
+          <div className="pw-tip">
+            <GearSix weight="duotone" size={14} />
+            <p>เลือกประกาศนียบัตรและเรียงลำดับตามต้องการ จากนั้นกดสร้าง</p>
+          </div>
+
+          {portfolioPages.length > 0 && (
+            <div className="pw-saved">
+              <p className="ws-eyebrow">ที่บันทึกแล้ว</p>
+              <div className="pw-saved-list">
+                {portfolioPages.map((page) => (
+                  <div key={page.id} className="pw-saved-item">
+                    <Link href={`/portfolio/${page.id}`} className="pw-saved-link">
+                      <h4>{page.title}</h4>
+                      <p>
+                        {page.selected_certificate_ids?.length || 0} รายการ
+                        {(() => {
+                          const snap = page.content_snapshot as any;
+                          const t = snap?.template || "modern";
+                          return <> · {TEMPLATES.find((x) => x.id === t)?.name || t}</>;
+                        })()}
+                      </p>
+                    </Link>
+                    <button
+                      className="pw-saved-pdf"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch("/api/portfolio/export", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ portfolioId: page.id }),
+                          });
+                          if (!res.ok) throw new Error();
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `portfolio-${page.id}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch {
+                          setShowPdfError(true);
+                        }
+                      }}
+                      aria-label="ดาวน์โหลด PDF"
+                    >
+                      <FilePdf weight="duotone" size={14} />
+                    </button>
+                    <button
+                      className="pw-saved-del"
+                      onClick={() => setShowDeletePage(page)}
+                      aria-label="ลบ"
+                    >
+                      <Trash weight="duotone" size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-          </div>
-        </div>
-      )}
+          )}
+        </aside>
+      </div>
 
       <ConfirmDialog
         open={!!showDeletePage}
