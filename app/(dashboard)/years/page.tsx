@@ -5,12 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { fileIcon, iconClass } from "@/lib/file-icons";
+import { FolderOpen } from "@phosphor-icons/react";
 
-const yearDescriptions: Record<string, string> = {
-  "2569": "ผลงานในปีการศึกษาแรก",
-  "2570": "ความก้าวหน้าในปีที่สอง",
-  "2571": "เสริมสร้างทักษะในปีที่สาม",
-  "2572": "ผลงานในปีสุดท้าย",
+const yearMeta: Record<string, { desc: string; accent: string }> = {
+  "2569": { desc: "ผลงานในปีการศึกษาแรก", accent: "year-accent-clip" },
+  "2570": { desc: "ความก้าวหน้าในปีที่สอง", accent: "year-accent-pink" },
+  "2571": { desc: "เสริมสร้างทักษะในปีที่สาม", accent: "year-accent-mint" },
+  "2572": { desc: "ผลงานในปีสุดท้าย", accent: "year-accent-lavender" },
 };
 
 type YearPreview = {
@@ -39,7 +40,7 @@ export default function YearsPage() {
           .select("file_url, file_type", { count: "exact" })
           .eq("owner_id", user.id)
           .eq("academic_year", year)
-          .limit(2);
+          .limit(4);
 
         data[year] = {
           count: certs?.length || 0,
@@ -77,8 +78,10 @@ export default function YearsPage() {
             years.map((year) => (
               <div key={year} className="year-card-skeleton">
                 <div className="year-sk-thumb" />
-                <div className="year-sk-line w-40" />
-                <div className="year-sk-line w-70" />
+                <div className="year-sk-body">
+                  <div className="year-sk-line w-40" />
+                  <div className="year-sk-line w-70" />
+                </div>
               </div>
             ))
           ) : (
@@ -86,31 +89,46 @@ export default function YearsPage() {
               const d = yearData[year];
               const count = d?.count || 0;
               const previews = d?.previews || [];
+              const meta = yearMeta[year];
+              const accent = meta?.accent || "";
 
             return (
               <Link
                 key={year}
                 href={`/certificates?year=${year}`}
-                className="year-card"
+                className={`year-card ${accent}`}
               >
-                {previews.length > 0 && (
+                <div className="year-card-inner">
                   <div className="year-previews">
-                    {previews.map((p, i) => (
-                      <div key={i} className={`year-thumb ${isImageUrl(p.url, p.type) ? "" : `icon ${iconClass(p.type)}`}`}>
-                        {isImageUrl(p.url, p.type) ? (
-                          <img src={p.url} alt="" loading="lazy" />
+                    {previews.length > 0 ? (
+                      [0, 1, 2, 3].map((i) => {
+                        const p = previews[i];
+                        return p ? (
+                          <div key={i} className={`year-thumb ${isImageUrl(p.url, p.type) ? "" : `icon ${iconClass(p.type)}`}`}>
+                            {isImageUrl(p.url, p.type) ? (
+                              <img src={p.url} alt="" loading="lazy" />
+                            ) : (
+                              <span className="year-thumb-fallback">{fileIcon(p.type)}</span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="year-thumb-fallback">{fileIcon(p.type)}</span>
-                        )}
+                          <div key={i} className="year-thumb year-thumb-empty">
+                            {i === 0 && <FolderOpen weight="duotone" size={24} />}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="year-thumb year-thumb-empty year-thumb-full">
+                        <FolderOpen weight="duotone" size={32} />
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-                <div className="year-card-header">
-                  <span className="year-card-number">{year}</span>
-                  <span className="year-card-count">{count} รายการ</span>
+                  <div className="year-card-header">
+                    <span className="year-card-number">{year}</span>
+                    <span className="year-card-count">{count} รายการ</span>
+                  </div>
+                  <p>{meta?.desc || ""}</p>
                 </div>
-                <p>{yearDescriptions[year]}</p>
               </Link>
             );
           }))}

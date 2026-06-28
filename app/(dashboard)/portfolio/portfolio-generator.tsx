@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
-import { MagnifyingGlass, ListDashes, CheckCircle, Trash } from "@phosphor-icons/react";
+import { MagnifyingGlass, ListDashes, CheckCircle, Trash, FilePdf } from "@phosphor-icons/react";
+import { TEMPLATES } from "@/app/components/portfolio-templates";
+import type { TemplateType } from "@/app/components/portfolio-templates";
 import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
@@ -20,6 +22,7 @@ export function PortfolioGenerator() {
   const [portfolioPages, setPortfolioPages] = useState<PortfolioPage[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [title, setTitle] = useState("");
+  const [template, setTemplate] = useState<TemplateType>("modern");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [certSearch, setCertSearch] = useState("");
@@ -127,6 +130,7 @@ export function PortfolioGenerator() {
         issued_at: c.issued_at,
       })),
       generated_at: new Date().toISOString(),
+      template: template,
     };
 
     const { error: insertError } = await supabase.from("portfolio_pages").insert({
@@ -184,6 +188,33 @@ export function PortfolioGenerator() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น พอร์ต Admission 2572"
             />
+          </div>
+
+          <div className="form-field" style={{ marginTop: 12 }}>
+            <label>แม่แบบ</label>
+            <div className="template-selector">
+              {TEMPLATES.map((t) => (
+                <button
+                  key={t.id}
+                  className={`template-card${template === t.id ? " active" : ""}`}
+                  onClick={() => setTemplate(t.id)}
+                  type="button"
+                >
+                  <div className="template-card-preview">
+                    <div className={`template-card-icon template-icon-${t.id}`} />
+                  </div>
+                  <div className="template-card-body">
+                    <strong>{t.name}</strong>
+                    <p>{t.desc}</p>
+                  </div>
+                  {template === t.id && (
+                    <span className="template-check">
+                      <CheckCircle weight="fill" size={16} />
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && <p className="form-error" style={{ marginTop: 8 }}>{error}</p>}
@@ -262,6 +293,7 @@ export function PortfolioGenerator() {
       {portfolioPages.length > 0 && (
         <div className="portfolio-list" data-entrance>
           <h3>พอร์ตโฟลิโอที่บันทึกแล้ว</h3>
+          <div className="portfolio-list-scroll">
           {portfolioPages.map((page) => (
             <div className="panel" key={page.id}>
               <div className="portfolio-list-head">
@@ -269,11 +301,42 @@ export function PortfolioGenerator() {
                   <h4 style={{ margin: 0 }}>{page.title}</h4>
                   <p style={{ margin: "4px 0", color: "var(--ink-muted)", fontSize: 13 }}>
                     {page.selected_certificate_ids?.length || 0} รายการ
+                    {(() => {
+                      const snap = page.content_snapshot as any;
+                      const t = snap?.template || "modern";
+                      return <> · {TEMPLATES.find((x) => x.id === t)?.name || t}</>;
+                    })()}
                   </p>
                   <p style={{ margin: 0, color: "var(--ink-faint)", fontSize: 12 }}>
                     สร้างเมื่อ {new Date(page.created_at || "").toLocaleDateString()}
                   </p>
                 </Link>
+                <button
+                  className="btn btn-sm btn-secondary"
+                  style={{ flexShrink: 0 }}
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/portfolio/export", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ portfolioId: page.id }),
+                      });
+                      if (!res.ok) throw new Error();
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `portfolio-${page.id}.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      alert("ไม่สามารถสร้าง PDF ได้");
+                    }
+                  }}
+                  aria-label="ดาวน์โหลด PDF"
+                >
+                  <FilePdf weight="duotone" size={14} />
+                </button>
                 <button
                   className="btn btn-sm btn-ghost"
                   style={{ color: "var(--ink-faint)", flexShrink: 0 }}
@@ -290,6 +353,7 @@ export function PortfolioGenerator() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>

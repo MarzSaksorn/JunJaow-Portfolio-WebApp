@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   ArrowClockwise,
   ArrowCounterClockwise,
+  SealCheck,
 } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
 
@@ -89,6 +90,15 @@ export function CertificateDetail() {
   const isPdf = certificate.file_type?.includes("pdf") || certificate.file_name?.toLowerCase().endsWith(".pdf");
   const fileSize = certificate.file_size ? formatFileSize(certificate.file_size) : null;
 
+  const metaRows = [
+    { label: "ผู้ออก", value: certificate.issuer },
+    { label: "วันที่ออก", value: certificate.issued_at ? new Date(certificate.issued_at).toLocaleDateString("th-TH", {
+      year: "numeric", month: "long", day: "numeric",
+    }) : null },
+    { label: "ปีการศึกษา", value: certificate.academic_year },
+    { label: "หมวดหมู่", value: certificate.category },
+  ].filter(r => r.value);
+
   return (
     <div ref={rootRef}>
       <header className="ws-header">
@@ -104,11 +114,19 @@ export function CertificateDetail() {
           <Link className="btn btn-secondary" href="/certificates">
             <ArrowLeft weight="duotone" /> กลับ
           </Link>
+          <span className="ws-header-divider" />
           <Link
             href={`/certificates/${certificate.id}/edit`}
             className="btn btn-secondary"
           >
             <PencilLine weight="duotone" /> แก้ไข
+          </Link>
+          <Link
+            href={`/verify/${certificate.id}`}
+            className="btn btn-secondary"
+            target="_blank"
+          >
+            <SealCheck weight="duotone" /> ยืนยัน
           </Link>
           <button className="btn btn-danger" onClick={handleDelete}>
             <Trash weight="duotone" /> ลบ
@@ -117,115 +135,103 @@ export function CertificateDetail() {
       </header>
 
       <div className="ws-body">
-        <div className="detail-grid" data-entrance-detail>
-          <div className="detail-content">
-            {certificate.issuer && (
-              <div className="detail-row">
-                <span className="detail-label">ผู้ออก</span>
-                <p>{certificate.issuer}</p>
-              </div>
-            )}
-
-            {certificate.description && (
-              <div className="detail-row">
-                <span className="detail-label">คำอธิบาย</span>
-                <p>{certificate.description}</p>
-              </div>
-            )}
-
-            <div className="detail-media" data-entrance-preview>
-              {isImage && certificate.file_url ? (
-                <div className="detail-img-rotate">
-                  <img
-                    src={certificate.file_url}
-                    alt={certificate.title}
-                    className="detail-image"
-                    style={{ transform: `rotate(${rotation}deg)` }}
-                    loading="lazy"
-                  />
-                  <div className="detail-rotate-actions">
-                    <button className="btn-rotate" onClick={() => setRotation(r => r - 90)} title="หมุนซ้าย">
-                      <ArrowCounterClockwise weight="duotone" size={16} />
-                    </button>
-                    <span className="rotate-label">{rotation}°</span>
-                    <button className="btn-rotate" onClick={() => setRotation(r => r + 90)} title="หมุนขวา">
-                      <ArrowClockwise weight="duotone" size={16} />
-                    </button>
-                  </div>
+        <div className="detail-layout" data-entrance-detail>
+          <div className="detail-preview-section" data-entrance-preview>
+            {isImage && certificate.file_url ? (
+              <div className="detail-img-rotate">
+                <img
+                  src={certificate.file_url}
+                  alt={certificate.title}
+                  className="detail-image"
+                  style={{ transform: `rotate(${rotation}deg)` }}
+                  loading="lazy"
+                />
+                <div className="detail-rotate-actions">
+                  <button className="btn-rotate" onClick={() => setRotation(r => r - 90)} title="หมุนซ้าย">
+                    <ArrowCounterClockwise weight="duotone" size={16} />
+                  </button>
+                  <span className="rotate-label">{rotation}°</span>
+                  <button className="btn-rotate" onClick={() => setRotation(r => r + 90)} title="หมุนขวา">
+                    <ArrowClockwise weight="duotone" size={16} />
+                  </button>
                 </div>
-              ) : isPdf && certificate.file_url ? (
-                <div className="detail-pdf-wrap">
-                  <iframe
-                    src={`${certificate.file_url}#view=FitH`}
-                    title={certificate.title}
-                    className="detail-pdf"
-                    loading="lazy"
-                  />
+              </div>
+            ) : isPdf && certificate.file_url ? (
+              <div className="detail-pdf-wrap">
+                <iframe
+                  src={`${certificate.file_url}#view=FitH`}
+                  title={certificate.title}
+                  className="detail-pdf"
+                  loading="lazy"
+                />
+                <a
+                  href={certificate.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary detail-download-btn"
+                >
+                  <DownloadSimple weight="duotone" /> ดาวน์โหลด PDF
+                </a>
+              </div>
+            ) : (
+              <div className="file-fallback">
+                <div className={`file-fallback-icon ${iconClass(certificate.file_type || "")}`}>
+                  {fileIcon(certificate.file_type || "", true)}
+                </div>
+                {certificate.file_name && (
+                  <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8 }}>
+                    {certificate.file_name}
+                    {fileSize ? ` (${fileSize})` : ""}
+                  </p>
+                )}
+                {certificate.file_url && (
                   <a
                     href={certificate.file_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-primary"
-                    style={{ marginTop: 8, width: "100%", justifyContent: "center" }}
+                    style={{ marginTop: 8 }}
                   >
-                    <DownloadSimple weight="duotone" /> ดาวน์โหลด PDF
+                    <DownloadSimple weight="duotone" /> ดาวน์โหลดไฟล์
                   </a>
-                </div>
-              ) : (
-                <div className="file-fallback">
-                  <div className={`file-fallback-icon ${iconClass(certificate.file_type || "")}`}>
-                    {fileIcon(certificate.file_type || "", true)}
-                  </div>
-                  {certificate.file_name && (
-                    <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8 }}>
-                      {certificate.file_name}
-                      {fileSize ? ` (${fileSize})` : ""}
-                    </p>
-                  )}
-                  {certificate.file_url && (
-                    <a
-                      href={certificate.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary"
-                      style={{ marginTop: 8 }}
-                    >
-                      <DownloadSimple weight="duotone" /> ดาวน์โหลดไฟล์
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+            {certificate.file_name && (
+              <div className="detail-file-info">
+                <span className="detail-file-name">{certificate.file_name}</span>
+                {fileSize && <span className="detail-file-size">{fileSize}</span>}
+              </div>
+            )}
+          </div>
 
-            {certificate.issued_at && (
-              <div className="detail-row">
-                <span className="detail-label">วันที่ออก</span>
-                <p>{new Date(certificate.issued_at).toLocaleDateString()}</p>
+          <div className="detail-meta-section">
+            {metaRows.length > 0 && (
+              <div className="detail-meta-table">
+                {metaRows.map((row, i) => (
+                  <div className="detail-meta-row" key={i}>
+                    <span className="detail-meta-label">{row.label}</span>
+                    <span className="detail-meta-value">{row.value}</span>
+                  </div>
+                ))}
               </div>
             )}
 
-            {certificate.category && (
-              <div className="detail-row">
-                <span className="detail-label">หมวดหมู่</span>
-                <p>{certificate.category}</p>
+            {certificate.description && (
+              <div className="detail-desc-block">
+                <span className="detail-desc-label">คำอธิบาย</span>
+                <p className="detail-desc-text">{certificate.description}</p>
               </div>
             )}
 
             {certificate.tags && certificate.tags.length > 0 && (
-              <div className="detail-row">
-                <span className="detail-label">แท็ก</span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+              <div className="detail-tags-block">
+                <span className="detail-tags-label">แท็ก</span>
+                <div className="detail-tags-list">
                   {certificate.tags.map((tag) => (
                     <span className={`dot-tag ${dotTagColor(tag)}`} key={tag}>{tag}</span>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {certificate.file_name && (
-              <div className="detail-row">
-                <span className="detail-label">ไฟล์</span>
-                <p>{certificate.file_name}</p>
               </div>
             )}
           </div>

@@ -28,6 +28,11 @@ const dotTagColor = (cat: string | null) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
+function TileContentWrapper({ href, batchMode, className, children }: { href: string; batchMode: boolean; className: string; children: React.ReactNode }) {
+  if (batchMode) return <div className={className}>{children}</div>;
+  return <Link href={href} className={className}>{children}</Link>;
+}
+
 export function CertificateList() {
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -173,27 +178,34 @@ export function CertificateList() {
   return (
     <div className="archive-layout" ref={rootRef}>
       <aside className="filter-sidebar" data-entrance-filter>
-        <h4>ปีการศึกษา</h4>
-        {years.map((y) => (
-          <button
-            key={y}
-            className={`filter-btn ${selectedYear === y ? "active" : ""}`}
-            onClick={() => updateFilter("year", selectedYear === y ? "" : y)}
-          >
-            {y}
-          </button>
-        ))}
+        <div className="filter-section">
+          <h4>ปีการศึกษา</h4>
+          {years.map((y) => (
+            <button
+              key={y}
+              className={`filter-btn${selectedYear === y ? " active" : ""}`}
+              onClick={() => updateFilter("year", selectedYear === y ? "" : y)}
+            >
+              <span className={`filter-dot ${yearDotClasses[y] || "tab-clip"}`} />
+              {y}
+            </button>
+          ))}
+        </div>
 
-        <h4 style={{ marginTop: 16 }}>หมวดหมู่</h4>
-        {categories.map((c) => (
-          <button
-            key={c}
-            className={`filter-btn ${selectedCategory === c ? "active" : ""}`}
-            onClick={() => updateFilter("category", selectedCategory === c ? "" : c)}
-          >
-            {c}
-          </button>
-        ))}
+        <div className="filter-section">
+          <h4>หมวดหมู่</h4>
+          <div className="filter-pills">
+            {categories.map((c) => (
+              <button
+                key={c}
+                className={`filter-pill${selectedCategory === c ? " active" : ""}`}
+                onClick={() => updateFilter("category", selectedCategory === c ? "" : c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {(selectedYear || selectedCategory) && (
           <button className="filter-clear" onClick={clearFilters}>
@@ -309,7 +321,15 @@ export function CertificateList() {
             {certificates.map((cert, i) => {
               const isImage = cert.file_type?.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i.test(cert.file_url || "");
               return (
-                <div key={cert.id} className={`cert-tile${batchMode ? " has-checkbox" : ""}`} style={{ "--i": i } as React.CSSProperties}>
+                <div
+                  key={cert.id}
+                  className={`cert-tile${batchMode ? " has-checkbox" : ""}${selectedIds.has(cert.id) ? " selected" : ""}`}
+                  style={{ "--i": i } as React.CSSProperties}
+                  onClick={batchMode ? () => toggleSelect(cert.id) : undefined}
+                  role={batchMode ? "button" : undefined}
+                  tabIndex={batchMode ? 0 : undefined}
+                  onKeyDown={batchMode ? (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggleSelect(cert.id); } } : undefined}
+                >
                   {batchMode && (
                     <label className="cert-tile-check" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -319,8 +339,9 @@ export function CertificateList() {
                       />
                     </label>
                   )}
-                  <Link
+                  <TileContentWrapper
                     href={`/certificates/${cert.id}`}
+                    batchMode={batchMode}
                     className="cert-tile-link"
                   >
                     <div className={`cert-tile-thumb ${isImage ? "cert-tile-image" : ""} ${iconClass(cert.file_type || "")}`}>
@@ -338,6 +359,13 @@ export function CertificateList() {
                       <span className={`cert-tile-thumb-fallback${(isImage && cert.file_url) ? " hide" : ""}`}>
                         {fileIcon(cert.file_type || "")}
                       </span>
+                      {cert.file_type && (
+                        <span className="cert-tile-type">
+                          {cert.file_type.startsWith("image/") ? "รูปภาพ" :
+                           cert.file_type.includes("pdf") ? "PDF" :
+                           cert.file_type.includes("word") || cert.file_type.includes("document") ? "DOC" : "ไฟล์"}
+                        </span>
+                      )}
                     </div>
                     <div className={`cert-tile-tab ${yearDotClasses[cert.academic_year || ""] || "tab-clip"}`} />
                     <div className="cert-tile-body">
@@ -355,7 +383,7 @@ export function CertificateList() {
                         ))}
                       </div>
                     </div>
-                  </Link>
+                  </TileContentWrapper>
                 </div>
               );
             })}
