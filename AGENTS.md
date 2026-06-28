@@ -1,19 +1,19 @@
 # Mode → Skill Mapping
 
 - **feat mode** → load `frontend-dev`, `supabase`, and `nodejs-backend-patterns` skills before starting
-- **UI mode** → load `frontend-design` and `ui-ux-pro-max` skills before starting
-- **UI fix mode** → load `interface-design` skill before starting
+- **UI mode** → load `frontend-design`, `interface-design`, and `ui-ux-pro-max` skills before starting
 - **Idea mode** → load `marketing-ideas` skill before starting
+- **Hunt mode** → load `bug-reaper` skill before starting
 
 ## Note
 
-When the user says "feat mode", "UI mode", or "UI fix mode" (or similar variations like "feat", "ui mode", "UI fix", etc., case-insensitive), load the corresponding skill first before proceeding with the task.
+When the user says "feat mode", "UI mode", or "Hunt mode" (or similar variations like "feat", "ui mode", "hunt", etc., case-insensitive), load the corresponding skill first before proceeding with the task.
 
 ## Workflow
 
 1. **feat mode** → build the feature
-2. **UI mode** → polish and design
-3. **UI fix mode** → fix anything broken
+2. **UI mode** → polish, design, and repair broken UI
+3. **Hunt mode** → hunt for bugs and vulnerabilities
 
 ## Commit Message
 
