@@ -2621,19 +2621,25 @@ a { color: inherit; text-decoration: none; }
     margin-top: 0;
     gap: 0;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    flex: 1;
+    min-width: 0;
+    touch-action: pan-x;
   }
   .binder-nav::-webkit-scrollbar { display: none; }
   .binder-link {
     width: 44px;
     min-width: 44px;
+    max-width: 44px;
     height: 44px;
     padding: 0;
     justify-content: center;
     gap: 0;
+    flex-shrink: 0;
   }
   .binder-link-label { display: none; }
   .binder-link.active::before { left: 50%; top: auto; translate: -50% 0; bottom: -1px; width: 20px; height: 3px; border-radius: 2px 2px 0 0; }
@@ -2656,8 +2662,10 @@ a { color: inherit; text-decoration: none; }
     flex-wrap: wrap;
     padding: 10px 14px;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    touch-action: pan-x;
   }
   .filter-sidebar::-webkit-scrollbar { display: none; }
   .filter-section {
@@ -2700,7 +2708,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 480px) {
-  .binder-link { width: 38px; min-width: 38px; height: 40px; }
+  .binder-link { width: 38px; min-width: 38px; max-width: 38px; height: 40px; }
   .binder-avatar, .binder-theme, .binder-signout { width: 32px; height: 32px; min-width: 32px; }
   .binder-link-icon { font-size: 17px; }
   .binder-footer { padding: 0 2px; gap: 1px; }
