@@ -7,7 +7,7 @@
 
 ## Note
 
-When the user says "feat mode", "UI mode", or "Hunt mode" (or similar variations like "feat", "ui mode", "hunt", etc., case-insensitive), load the corresponding skill first before proceeding with the task.
+When the user says "feat mode", "UI mode", "UI Redesign mode", or "Hunt mode" (or similar variations like "feat", "ui mode", "ui redesign", "hunt", etc., case-insensitive), load the corresponding skill first before proceeding with the task.
 
 ## Workflow
 

@@ -8,10 +8,10 @@ import gsap from "gsap";
 import {
   Certificate,
   FolderOpen,
-  CalendarBlank,
   User,
   ArrowRight,
   ClockCounterClockwise,
+  CheckCircle,
 } from "@phosphor-icons/react";
 import { fileIcon, iconClass } from "@/lib/file-icons";
 import type { Database } from "@/lib/supabase/types";
@@ -104,25 +104,22 @@ export function DashboardClient() {
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const blocks = el.querySelectorAll<HTMLElement>(".year-block");
+    const blocks = el.querySelectorAll<HTMLElement>(".ds-year");
     if (!blocks.length) return;
     const dir = sessionStorage.getItem("nav-dir") === "up" ? -1 : 1;
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       gsap.fromTo(blocks,
         {
-          y: 56 * dir,
-          rotation: (i) => (i - 1.5) * 10,
+          y: 40 * dir,
           autoAlpha: 0,
         },
         {
           y: 0,
-          rotation: 0,
           autoAlpha: 1,
-          duration: 0.5,
-          stagger: 0.08,
+          duration: 0.4,
+          stagger: 0.06,
           ease: "power2.out",
-          onComplete: () => blocks.forEach((b) => b.style.removeProperty("transform")),
         },
       );
     }, el);
@@ -151,7 +148,7 @@ export function DashboardClient() {
       <header className="ws-header">
         <div>
           <p className="ws-eyebrow">จัดการพอร์ตโฟลิโออย่างรวดเร็ว</p>
-          <h1>ความสำเร็จของคุณ<br />พร้อมเสมอ</h1>
+          <h1>ห้องรับรอง<br />ผลงานของคุณ</h1>
         </div>
         <div className="ws-header-actions">
           <Link className="btn btn-secondary" href="/certificates">เรียกดูคลัง</Link>
@@ -160,7 +157,35 @@ export function DashboardClient() {
       </header>
 
       <div className="ws-body">
-        <section className="year-spread">
+        <div className="ds-stats">
+          <div className="ds-stat ds-stat-clip">
+            <div className="ds-stat-body">
+              <strong>{totalCertificates}</strong>
+              <span>ทั้งหมด</span>
+              <small>+{recentCount} เดือนนี้</small>
+            </div>
+          </div>
+          <div className="ds-stat ds-stat-pink">
+            <div className="ds-stat-body">
+              <strong>{portfolioCount}</strong>
+              <span>พอร์ตโฟลิโอ</span>
+            </div>
+          </div>
+          <div className="ds-stat ds-stat-mint">
+            <div className="ds-stat-body">
+              <strong>{Object.keys(yearCounts).length}</strong>
+              <span>ปีการศึกษา</span>
+            </div>
+          </div>
+          <div className="ds-stat ds-stat-lavender">
+            <div className="ds-stat-body">
+              <strong>{profileCompletion}%</strong>
+              <span>โปรไฟล์พร้อม</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="ds-years">
           {years.map((year) => {
             const count = yearCounts[year] || 0;
             const maxCount = Math.max(...Object.values(yearCounts), 1);
@@ -169,47 +194,23 @@ export function DashboardClient() {
               <Link
                 key={year}
                 href={`/certificates?year=${year}`}
-                className={`year-block ${yearBorderClasses[year]}`}
+                className={`ds-year ${yearBorderClasses[year]}`}
               >
-                <div className="year-block-bar" style={{ width: `${barPct}%` }} />
-                <div className="year-block-dot" />
-                <span className="year-block-year">{year}</span>
-                <span className="year-block-count">{count} รายการ</span>
+                <span className="ds-year-bar" style={{ width: `${barPct}%` }} />
+                <span className="ds-year-num">{year}</span>
+                <span className="ds-year-count">{count} รายการ</span>
               </Link>
             );
           })}
-        </section>
+        </div>
 
-        <div className="bento-layout" data-entrance-panel>
-          <div className="bento-stats">
-            <div className="bento-stat clip">
-              <strong>{totalCertificates}</strong>
-              <span>ทั้งหมด</span>
-              <small>+{recentCount} เดือนนี้</small>
+        <div className="ds-main">
+          <section className="ds-sheet">
+            <div className="ds-sheet-head">
+              <h2>ประกาศนียบัตรล่าสุด</h2>
+              <Link className="btn btn-sm btn-secondary" href="/certificates">ดูทั้งหมด</Link>
             </div>
-            <div className="bento-stat pink">
-              <strong>{portfolioCount}</strong>
-              <span>พอร์ตโฟลิโอ</span>
-            </div>
-            <div className="bento-stat mint">
-              <strong>{Object.keys(yearCounts).length}</strong>
-              <span>ปีการศึกษา</span>
-            </div>
-            <div className="bento-stat lavender">
-              <strong>{profileCompletion}%</strong>
-              <span>โปรไฟล์พร้อม</span>
-            </div>
-          </div>
-
-          <div className="bento-recent">
-            <div className="panel-header">
-              <div>
-                <p className="ws-eyebrow">ล่าสุด</p>
-                <h3>ประกาศนียบัตรล่าสุด</h3>
-              </div>
-              <Link className="btn btn-secondary btn-sm" href="/certificates">ดูทั้งหมด</Link>
-            </div>
-            <div className="bento-recent-list">
+            <div className="ds-sheet-body">
               {recentCerts.length === 0 ? (
                 <div className="empty-state" style={{ padding: "24px 16px" }}>
                   <p>ยังไม่มีประกาศนียบัตร</p>
@@ -244,102 +245,87 @@ export function DashboardClient() {
                 ))
               )}
             </div>
-          </div>
 
-          <div className="bento-activity">
-            <div className="panel-header">
-              <div>
-                <p className="ws-eyebrow">กิจกรรม</p>
-                <h3>การเปลี่ยนแปลงล่าสุด</h3>
+            <div className="ds-feed">
+              <h3 className="ds-feed-head">กิจกรรมล่าสุด</h3>
+              <div className="ds-feed-list">
+                {loading ? (
+                  <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: "4px 0" }}>กำลังโหลด...</p>
+                ) : activities.length === 0 ? (
+                  <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: "4px 0" }}>ยังไม่มีกิจกรรม</p>
+                ) : (
+                  activities.slice(0, 5).map((a) => (
+                    <div key={a.id} className="ds-feed-item">
+                      <ClockCounterClockwise weight="duotone" size={13} />
+                      <span>
+                        {a.action === "cert_created" && "เพิ่ม"}
+                        {a.action === "cert_updated" && "แก้ไข"}
+                        {a.action === "cert_deleted" && "ลบ"}
+                        {a.target_type === "certificate" && " ประกาศนียบัตร"}
+                        {(a.details as { title?: string })?.title && (
+                          <>: {(a.details as { title: string }).title}</>
+                        )}
+                      </span>
+                      <span className="ds-feed-time">
+                        {new Date(a.created_at).toLocaleDateString("th-TH", {
+                          day: "numeric", month: "short",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-            <div className="bento-activity-list">
-              {loading ? (
-                <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: 4 }}>กำลังโหลด...</p>
-              ) : activities.length === 0 ? (
-                <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: 4 }}>ยังไม่มีกิจกรรม</p>
-              ) : (
-                activities.slice(0, 6).map((a) => (
-                  <div key={a.id} className="activity-row">
-                    <ClockCounterClockwise weight="duotone" size={14} />
-                    <span className="activity-action">
-                      {a.action === "cert_created" && "เพิ่ม"}
-                      {a.action === "cert_updated" && "แก้ไข"}
-                      {a.action === "cert_deleted" && "ลบ"}
-                      {a.target_type === "certificate" && " ประกาศนียบัตร"}
-                      {(a.details as { title?: string })?.title && (
-                        <>: {(a.details as { title: string }).title}</>
-                      )}
-                    </span>
-                    <span className="activity-time">
-                      {new Date(a.created_at).toLocaleDateString("th-TH", {
-                        day: "numeric", month: "short",
-                        hour: "2-digit", minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          </section>
 
-          <div className="bento-actions">
-            <Link className="desk-action" href="/portfolio">
-              <div className="desk-action-icon"><FolderOpen weight="duotone" /></div>
-              <div className="desk-action-text">
-                <strong>สร้างพอร์ตโฟลิโอ</strong>
-                <span>รวมประกาศนียบัตรลงหน้าเดียว</span>
-              </div>
-              <ArrowRight weight="duotone" style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
-            </Link>
-            <Link className="desk-action" href="/profile">
-              <div className="desk-action-icon"><User weight="duotone" /></div>
-              <div className="desk-action-text">
-                <strong>แก้ไขโปรไฟล์</strong>
-                <span>ชื่อ โรงเรียน ทักษะ ประวัติ</span>
-              </div>
-              <ArrowRight weight="duotone" style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
-            </Link>
-            <Link className="desk-action" href="/certificates/new">
-              <div className="desk-action-icon"><Certificate weight="duotone" /></div>
-              <div className="desk-action-text">
-                <strong>อัปโหลดประกาศนียบัตร</strong>
-                <span>เพิ่มไฟล์รูปหรือเอกสาร</span>
-              </div>
-              <ArrowRight weight="duotone" style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
-            </Link>
-          </div>
-
-          <div className="bento-sidebar">
-            <div className="bento-card">
+          <aside className="ds-flap">
+            <div className="ds-flap-profile">
+              <div className="ds-flap-accent" />
               <p className="ws-eyebrow">ข้อมูลส่วนตัว</p>
-              <p style={{ fontSize: 13, color: "var(--ink-muted)", lineHeight: 1.6, margin: "6px 0 0" }}>
-                เก็บชื่อ โรงเรียน ประวัติ ทักษะ พร้อมสร้างพอร์ตโฟลิโอ
-              </p>
+              <p className="ds-flap-desc">เก็บชื่อ โรงเรียน ประวัติ ทักษะ พร้อมสร้างพอร์ตโฟลิโอ</p>
               <div className="meter">
                 <span className="meter-fill" style={{ width: `${profileCompletion}%` }} />
               </div>
               <span className="meter-label">{profileCompletion}% พร้อมสร้าง</span>
             </div>
 
-            <div className="bento-card">
+            <div className="ds-flap-section">
               <p className="ws-eyebrow">ขั้นตอนถัดไป</p>
-              <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
-                <label className="task-check">
-                  <input type="checkbox" defaultChecked={totalCertificates > 0} />
+              <div className="ds-flap-tasks">
+                <label className="task-check task-check-done">
+                  <CheckCircle weight={totalCertificates > 0 ? "fill" : "regular"} size={16} />
                   <span>อัปโหลดประกาศนียบัตร</span>
                 </label>
-                <label className="task-check">
-                  <input type="checkbox" defaultChecked={profileCompletion >= 80} />
+                <label className="task-check task-check-done">
+                  <CheckCircle weight={profileCompletion >= 80 ? "fill" : "regular"} size={16} />
                   <span>กรอกโปรไฟล์ให้สมบูรณ์</span>
                 </label>
-                <label className="task-check">
-                  <input type="checkbox" defaultChecked={portfolioCount > 0} />
+                <label className="task-check task-check-done">
+                  <CheckCircle weight={portfolioCount > 0 ? "fill" : "regular"} size={16} />
                   <span>สร้างหน้าพอร์ตโฟลิโอ</span>
                 </label>
               </div>
             </div>
-          </div>
+
+            <div className="ds-flap-actions">
+              <Link className="ds-flap-btn" href="/portfolio">
+                <FolderOpen weight="duotone" size={16} />
+                <span>สร้างพอร์ตโฟลิโอ</span>
+                <ArrowRight weight="duotone" size={14} />
+              </Link>
+              <Link className="ds-flap-btn" href="/profile">
+                <User weight="duotone" size={16} />
+                <span>แก้ไขโปรไฟล์</span>
+                <ArrowRight weight="duotone" size={14} />
+              </Link>
+              <Link className="ds-flap-btn" href="/certificates/new">
+                <Certificate weight="duotone" size={16} />
+                <span>อัปโหลดประกาศนียบัตร</span>
+                <ArrowRight weight="duotone" size={14} />
+              </Link>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

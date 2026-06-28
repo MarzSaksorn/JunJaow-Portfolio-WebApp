@@ -5,13 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { fileIcon, iconClass } from "@/lib/file-icons";
-import { FolderOpen } from "@phosphor-icons/react";
+import { FolderOpen, ArrowRight } from "@phosphor-icons/react";
 
 const yearMeta: Record<string, { desc: string; accent: string }> = {
-  "2569": { desc: "ผลงานในปีการศึกษาแรก", accent: "year-accent-clip" },
-  "2570": { desc: "ความก้าวหน้าในปีที่สอง", accent: "year-accent-pink" },
-  "2571": { desc: "เสริมสร้างทักษะในปีที่สาม", accent: "year-accent-mint" },
-  "2572": { desc: "ผลงานในปีสุดท้าย", accent: "year-accent-lavender" },
+  "2569": { desc: "ผลงานในปีการศึกษาแรก", accent: "ya-clip" },
+  "2570": { desc: "ความก้าวหน้าในปีที่สอง", accent: "ya-pink" },
+  "2571": { desc: "เสริมสร้างทักษะในปีที่สาม", accent: "ya-mint" },
+  "2572": { desc: "ผลงานในปีสุดท้าย", accent: "ya-lavender" },
 };
 
 type YearPreview = {
@@ -73,14 +73,18 @@ export default function YearsPage() {
       </header>
 
       <div className="ws-body">
-        <div className="years-grid" data-entrance>
+        <div className="ya-grid" data-entrance>
           {loading ? (
             years.map((year) => (
-              <div key={year} className="year-card-skeleton">
-                <div className="year-sk-thumb" />
-                <div className="year-sk-body">
-                  <div className="year-sk-line w-40" />
-                  <div className="year-sk-line w-70" />
+              <div key={year} className="ya-skeleton">
+                <div className="ya-sk-head" />
+                <div className="ya-sk-body">
+                  <div className="ya-sk-grid">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="ya-sk-cell" />
+                    ))}
+                  </div>
+                  <div className="ya-sk-line" />
                 </div>
               </div>
             ))
@@ -96,38 +100,43 @@ export default function YearsPage() {
               <Link
                 key={year}
                 href={`/certificates?year=${year}`}
-                className={`year-card ${accent}`}
+                className={`ya-card ${accent}`}
               >
-                <div className="year-card-inner">
-                  <div className="year-previews">
+                <div className={`ya-head ${accent}`}>
+                  <strong>{year}</strong>
+                  <span className="ya-head-count">{count}</span>
+                  <div className="ya-head-bar" />
+                </div>
+                <div className="ya-body">
+                  <div className="ya-previews">
                     {previews.length > 0 ? (
                       [0, 1, 2, 3].map((i) => {
                         const p = previews[i];
                         return p ? (
-                          <div key={i} className={`year-thumb ${isImageUrl(p.url, p.type) ? "" : `icon ${iconClass(p.type)}`}`}>
+                          <div key={i} className="ya-thumb">
                             {isImageUrl(p.url, p.type) ? (
                               <img src={p.url} alt="" loading="lazy" />
                             ) : (
-                              <span className="year-thumb-fallback">{fileIcon(p.type)}</span>
+                              <span className="ya-thumb-fallback">{fileIcon(p.type)}</span>
                             )}
                           </div>
                         ) : (
-                          <div key={i} className="year-thumb year-thumb-empty">
-                            {i === 0 && <FolderOpen weight="duotone" size={24} />}
-                          </div>
+                          <div key={i} className="ya-thumb ya-thumb-empty" />
                         );
                       })
                     ) : (
-                      <div className="year-thumb year-thumb-empty year-thumb-full">
-                        <FolderOpen weight="duotone" size={32} />
-                      </div>
+                      <>
+                        <div className="ya-thumb ya-thumb-empty" />
+                        <div className="ya-thumb ya-thumb-empty" />
+                        <div className="ya-thumb ya-thumb-empty" />
+                        <div className="ya-thumb ya-thumb-empty" />
+                      </>
                     )}
                   </div>
-                  <div className="year-card-header">
-                    <span className="year-card-number">{year}</span>
-                    <span className="year-card-count">{count} รายการ</span>
+                  <div className="ya-footer">
+                    <span>{meta?.desc || ""}</span>
+                    <ArrowRight weight="duotone" size={14} />
                   </div>
-                  <p>{meta?.desc || ""}</p>
                 </div>
               </Link>
             );

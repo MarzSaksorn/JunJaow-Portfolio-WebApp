@@ -17,6 +17,7 @@ import {
   SealCheck,
 } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
+import { ConfirmDialog } from "@/app/components/confirm-dialog";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
 
@@ -35,6 +36,7 @@ export function CertificateDetail() {
 
   const [certificate, setCertificate] = useState<Certificate | null>(null);
   const [rotation, setRotation] = useState(0);
+  const [showDelete, setShowDelete] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -61,7 +63,7 @@ export function CertificateDetail() {
   }, [id, router]);
 
   async function handleDelete() {
-    if (!certificate || !confirm("ลบประกาศนียบัตรนี้?")) return;
+    if (!certificate) return;
 
     const supabase = createClient();
 
@@ -128,11 +130,21 @@ export function CertificateDetail() {
           >
             <SealCheck weight="duotone" /> ยืนยัน
           </Link>
-          <button className="btn btn-danger" onClick={handleDelete}>
+          <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
             <Trash weight="duotone" /> ลบ
           </button>
         </div>
       </header>
+
+      <ConfirmDialog
+        open={showDelete}
+        title="ลบประกาศนียบัตร"
+        message={`แน่ใจว่าต้องการลบ "${certificate.title}"? การกระทำนี้ไม่สามารถย้อนกลับได้`}
+        confirmLabel="ลบ"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setShowDelete(false)}
+      />
 
       <div className="ws-body">
         <div className="detail-layout" data-entrance-detail>

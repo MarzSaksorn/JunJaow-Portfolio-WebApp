@@ -44,7 +44,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="login-page" ref={rootRef}>
+    <main className="login-page" id="main-content" ref={rootRef}>
       <div className="login-card" data-entrance-scale>
         <div className="login-card-clip" />
 

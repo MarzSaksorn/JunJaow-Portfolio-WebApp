@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, FilePdf, ShareNetwork } from "@phosphor-icons/react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/app/components/confirm-dialog";
 import {
   ModernTemplate,
   ClassicTemplate,
@@ -63,6 +64,7 @@ export function PortfolioView({ page }: { page: PageData }) {
   const snap = page.content_snapshot;
   const certs = snap?.certificates || [];
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [showPdfError, setShowPdfError] = useState(false);
 
   function shareUrl(platform: "line" | "facebook") {
     const url = encodeURIComponent(window.location.href);
@@ -87,7 +89,7 @@ export function PortfolioView({ page }: { page: PageData }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("ไม่สามารถสร้าง PDF ได้");
+      setShowPdfError(true);
     } finally {
       setPdfLoading(false);
     }
@@ -97,7 +99,7 @@ export function PortfolioView({ page }: { page: PageData }) {
   const preset = template === "classic" ? "warm" : template === "timeline" ? "slate" : "";
 
   return (
-    <main className="public-portfolio" data-color-preset={preset || undefined}>
+    <main className="public-portfolio" id="main-content" data-color-preset={preset || undefined}>
       <header className="public-portfolio-head">
         <div className="public-portfolio-head-inner">
           <div className="public-portfolio-brand">
@@ -146,6 +148,15 @@ export function PortfolioView({ page }: { page: PageData }) {
         </div>
         <p>สร้างด้วย JunJaow Portfolio · {new Date(snap?.generated_at || "").toLocaleDateString("th-TH")}</p>
       </footer>
+
+      <ConfirmDialog
+        open={showPdfError}
+        title="เกิดข้อผิดพลาด"
+        message="ไม่สามารถสร้าง PDF ได้ กรุณาลองอีกครั้ง"
+        confirmLabel="ตกลง"
+        onConfirm={() => setShowPdfError(false)}
+        onCancel={() => setShowPdfError(false)}
+      />
     </main>
   );
 }

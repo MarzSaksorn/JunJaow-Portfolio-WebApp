@@ -10,11 +10,11 @@ import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
 
-const yearDotClasses: Record<string, string> = {
-  "2569": "tab-clip",
-  "2570": "tab-pink",
-  "2571": "tab-mint",
-  "2572": "tab-lavender",
+const yearAccentClasses: Record<string, string> = {
+  "2569": "accent-clip",
+  "2570": "accent-pink",
+  "2571": "accent-mint",
+  "2572": "accent-lavender",
 };
 
 const monthNamesTH = [
@@ -24,7 +24,7 @@ const monthNamesTH = [
 
 export default function TimelinePage() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,31 +52,20 @@ export default function TimelinePage() {
   }, []);
 
   useEffect(() => {
-    const el = timelineRef.current;
+    const el = feedRef.current;
     if (!el || certificates.length === 0) return;
-    const items = el.querySelectorAll<HTMLElement>(".tl-item");
-    const dots = el.querySelectorAll<HTMLElement>(".tl-dot");
+    const items = el.querySelectorAll<HTMLElement>(".tm-entry");
     if (!items.length) return;
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       gsap.from(items, {
-        y: 20,
+        y: 16,
         autoAlpha: 0,
-        duration: 0.45,
-        stagger: 0.06,
+        duration: 0.4,
+        stagger: 0.05,
         ease: "power3.out",
         clearProps: "transform",
       });
-      if (dots.length) {
-        gsap.from(dots, {
-          scale: 0.3,
-          opacity: 0,
-          duration: 0.35,
-          stagger: 0.06,
-          ease: "back.out(2)",
-          clearProps: "transform",
-        });
-      }
     }, el);
     return () => mm.revert();
   }, [certificates.length]);
@@ -99,20 +88,33 @@ export default function TimelinePage() {
       <header className="ws-header">
         <div>
           <p className="ws-eyebrow">เส้นเวลา</p>
-          <h1>ความสำเร็จตามลำดับเวลา</h1>
+          <h1>ลำดับความสำเร็จ</h1>
         </div>
       </header>
 
       <div className="ws-body">
         {loading ? (
-          <div className="tl-skeleton">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="tl-sk-item">
-                <div className="tl-sk-dot" />
-                <div className="tl-sk-card">
-                  <div className="skeleton-line w-50" />
-                  <div className="skeleton-line w-80" />
-                  <div className="skeleton-line w-30" />
+          <div className="tm-skeleton">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="tm-sk-month">
+                <div className="tm-sk-divider" />
+                <div className="tm-sk-entry">
+                  <div className="tm-sk-accent" />
+                  <div className="tm-sk-thumb" />
+                  <div className="tm-sk-lines">
+                    <div className="skeleton-line w-60" />
+                    <div className="skeleton-line w-40" />
+                    <div className="skeleton-line w-20" />
+                  </div>
+                </div>
+                <div className="tm-sk-entry">
+                  <div className="tm-sk-accent" />
+                  <div className="tm-sk-thumb" />
+                  <div className="tm-sk-lines">
+                    <div className="skeleton-line w-50" />
+                    <div className="skeleton-line w-30" />
+                    <div className="skeleton-line w-25" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -126,7 +128,7 @@ export default function TimelinePage() {
             </Link>
           </div>
         ) : (
-          <div className="timeline" ref={timelineRef}>
+          <div className="tm-feed" ref={feedRef}>
             {sortedKeys.map((key) => {
               const [year, month] = key.split("-");
               const monthYear =
@@ -135,10 +137,10 @@ export default function TimelinePage() {
                 (parseInt(year) + 543);
 
               return (
-                <div key={key} className="tl-group">
-                  <div className="tl-month">
-                    <span className="tl-month-label">{monthYear}</span>
-                    <span className="tl-month-count">{grouped[key].length} รายการ</span>
+                <div key={key} className="tm-month">
+                  <div className="tm-divider">
+                    <span>{monthYear}</span>
+                    <span className="tm-divider-count">{grouped[key].length} รายการ</span>
                   </div>
                   {grouped[key].map((cert) => {
                     const isImage =
@@ -155,51 +157,45 @@ export default function TimelinePage() {
                           month: "short",
                         })
                       : "";
-                    const dotColor =
-                      yearDotClasses[cert.academic_year || ""] ||
-                      "tab-clip";
+                    const accentClass =
+                      yearAccentClasses[cert.academic_year || ""] ||
+                      "accent-clip";
                     return (
-                      <div key={cert.id} className="tl-item">
-                        <div className={`tl-dot ${dotColor}`} />
-                        <Link
-                          href={`/certificates/${cert.id}`}
-                          className="tl-card"
-                        >
-                          <div className="tl-card-thumb">
-                            {isImage && cert.file_url ? (
-                              <img src={cert.file_url} alt="" loading="lazy" />
-                            ) : (
-                              <span className="tl-card-fallback">
-                                {fileIcon(cert.file_type || "")}
+                      <Link
+                        key={cert.id}
+                        href={`/certificates/${cert.id}`}
+                        className={`tm-entry ${accentClass}`}
+                      >
+                        <div className="tm-entry-accent" />
+                        <div className="tm-entry-thumb">
+                          {isImage && cert.file_url ? (
+                            <img src={cert.file_url} alt="" loading="lazy" />
+                          ) : (
+                            <span className="tm-entry-fallback">
+                              {fileIcon(cert.file_type || "")}
+                            </span>
+                          )}
+                        </div>
+                        <div className="tm-entry-body">
+                          <div className="tm-entry-head">
+                            <h4>{cert.title}</h4>
+                            <span className="tm-entry-date">{dayStr}</span>
+                          </div>
+                          <p className="tm-entry-issuer">
+                            {cert.issuer || "—"}
+                          </p>
+                          <div className="tm-entry-tags">
+                            {cert.academic_year && (
+                              <span className="dot-tag tag-clip">
+                                ปี {cert.academic_year}
                               </span>
                             )}
+                            {cert.category && (
+                              <span className="dot-tag">{cert.category}</span>
+                            )}
                           </div>
-                          <div className="tl-card-body">
-                            <div className="tl-card-head">
-                              <h4>{cert.title}</h4>
-                              <span className="tl-card-date">{dayStr}</span>
-                            </div>
-                            <p className="tl-card-issuer">
-                              {cert.issuer || "—"}
-                            </p>
-                            <div className="tl-card-meta">
-                              {cert.academic_year && (
-                                <span
-                                  className={`dot-tag ${
-                                    yearDotClasses[cert.academic_year] ||
-                                    "tab-clip"
-                                  }`}
-                                >
-                                  ปี {cert.academic_year}
-                                </span>
-                              )}
-                              {cert.category && (
-                                <span className="dot-tag">{cert.category}</span>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
+                        </div>
+                      </Link>
                     );
                   })}
                 </div>

@@ -172,7 +172,44 @@ export default function EditCertificatePage() {
 
   useEntranceAnimation(rootRef);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div ref={rootRef}>
+        <header className="ws-header">
+          <div>
+            <p className="ws-eyebrow">คลังประกาศนียบัตร</p>
+            <div className="skeleton-line" style={{ width: "40%", height: 32, marginTop: 6 }} />
+          </div>
+        </header>
+        <div className="ws-body">
+          <div className="form-card">
+            <div className="form-grid">
+              <div className="form-col">
+                {[1,2,3,4].map((i) => (
+                  <div key={i} className="form-field">
+                    <div className="skeleton-line" style={{ width: "30%", height: 14, marginBottom: 8 }} />
+                    <div className="skeleton-line" style={{ width: "100%", height: 38 }} />
+                  </div>
+                ))}
+              </div>
+              <div className="form-col">
+                {[1,2,3,4].map((i) => (
+                  <div key={i} className="form-field">
+                    <div className="skeleton-line" style={{ width: "30%", height: 14, marginBottom: 8 }} />
+                    <div className="skeleton-line" style={{ width: "100%", height: 38 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="form-actions" style={{ marginTop: 16 }}>
+              <div className="skeleton-line" style={{ width: 80, height: 38, borderRadius: "var(--radius-sm)" }} />
+              <div className="skeleton-line" style={{ width: 160, height: 38, borderRadius: "var(--radius-sm)" }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error && !form.title) {
     return (

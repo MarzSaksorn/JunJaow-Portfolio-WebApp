@@ -49,7 +49,7 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
   ].filter(r => r.value);
 
   return (
-    <div className="verify-layout">
+    <main className="verify-layout" id="main-content">
       <div className="verify-card">
         <div className="verify-accent-bar" />
 
@@ -137,6 +137,6 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
           </span>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

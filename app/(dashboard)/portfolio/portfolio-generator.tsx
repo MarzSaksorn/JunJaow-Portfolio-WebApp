@@ -9,6 +9,7 @@ import { MagnifyingGlass, ListDashes, CheckCircle, Trash, FilePdf } from "@phosp
 import { TEMPLATES } from "@/app/components/portfolio-templates";
 import type { TemplateType } from "@/app/components/portfolio-templates";
 import type { Database } from "@/lib/supabase/types";
+import { ConfirmDialog } from "@/app/components/confirm-dialog";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -28,6 +29,8 @@ export function PortfolioGenerator() {
   const [certSearch, setCertSearch] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showDeletePage, setShowDeletePage] = useState<PortfolioPage | null>(null);
+  const [showPdfError, setShowPdfError] = useState(false);
   const [sections, setSections] = useState({
     skills: true,
     activities: true,
@@ -158,6 +161,14 @@ export function PortfolioGenerator() {
     const { data: freshPages } = await supabase
       .from("portfolio_pages").select("*").eq("owner_id", user.id).order("created_at", { ascending: false });
     if (freshPages) setPortfolioPages(freshPages);
+  }
+
+  async function handleDeletePage() {
+    if (!showDeletePage) return;
+    const supabase = createClient();
+    await supabase.from("portfolio_pages").delete().eq("id", showDeletePage.id);
+    setPortfolioPages((prev) => prev.filter((p) => p.id !== showDeletePage.id));
+    setShowDeletePage(null);
   }
 
   useEntranceAnimation(rootRef);
@@ -353,7 +364,7 @@ export function PortfolioGenerator() {
                       a.click();
                       URL.revokeObjectURL(url);
                     } catch {
-                      alert("ไม่สามารถสร้าง PDF ได้");
+                      setShowPdfError(true);
                     }
                   }}
                   aria-label="ดาวน์โหลด PDF"
@@ -363,12 +374,7 @@ export function PortfolioGenerator() {
                 <button
                   className="btn btn-sm btn-ghost"
                   style={{ color: "var(--ink-faint)", flexShrink: 0 }}
-                  onClick={async () => {
-                    if (!confirm("ลบพอร์ตโฟลิโอนี้?")) return;
-                    const supabase = createClient();
-                    await supabase.from("portfolio_pages").delete().eq("id", page.id);
-                    setPortfolioPages((prev) => prev.filter((p) => p.id !== page.id));
-                  }}
+                  onClick={() => setShowDeletePage(page)}
                   aria-label="ลบ"
                 >
                   <Trash weight="duotone" size={14} />
@@ -379,6 +385,25 @@ export function PortfolioGenerator() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!showDeletePage}
+        title="ลบพอร์ตโฟลิโอ"
+        message={`แน่ใจว่าต้องการลบ "${showDeletePage?.title}"?`}
+        confirmLabel="ลบ"
+        danger
+        onConfirm={handleDeletePage}
+        onCancel={() => setShowDeletePage(null)}
+      />
+
+      <ConfirmDialog
+        open={showPdfError}
+        title="เกิดข้อผิดพลาด"
+        message="ไม่สามารถสร้าง PDF ได้ กรุณาลองอีกครั้ง"
+        confirmLabel="ตกลง"
+        onConfirm={() => setShowPdfError(false)}
+        onCancel={() => setShowPdfError(false)}
+      />
     </div>
   );
 }

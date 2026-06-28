@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!authed) return null;
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" id="main-content">
       <Sidebar />
       <section className="workspace">{children}</section>
     </main>

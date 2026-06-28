@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      <main className="admin-workspace">
+      <main className="admin-workspace" id="main-content">
         {children}
       </main>
     </div>
