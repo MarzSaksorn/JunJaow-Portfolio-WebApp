@@ -16,12 +16,14 @@ import {
   SignOut,
   CaretLeft,
   CaretRight,
+  ClockClockwise,
 } from "@phosphor-icons/react";
 
 const icons: Record<string, React.ReactNode> = {
   "/": <House weight="duotone" />,
   "/certificates": <Certificate weight="duotone" />,
   "/years": <CalendarBlank weight="duotone" />,
+  "/timeline": <ClockClockwise weight="duotone" />,
   "/profile": <User weight="duotone" />,
   "/portfolio": <Folder weight="duotone" />,
   "/settings": <GearSix weight="duotone" />,
@@ -53,6 +55,7 @@ export function Sidebar() {
     { href: "/", label: "แดชบอร์ด", desc: "ภาพรวมผลงาน" },
     { href: "/certificates", label: "ประกาศนียบัตร", desc: "จัดการเอกสารทั้งหมด" },
     { href: "/years", label: "ปีการศึกษา", desc: "แยกตามปีที่เรียน" },
+    { href: "/timeline", label: "เส้นเวลา", desc: "เรียงตามลำดับเวลา" },
     { href: "/profile", label: "ข้อมูลส่วนตัว", desc: "ประวัติและทักษะ" },
     { href: "/portfolio", label: "พอร์ตโฟลิโอ", desc: "สร้างหน้ารวมผลงาน" },
     { href: "/settings", label: "ตั้งค่า", desc: "ธีมสีและการตั้งค่า" },

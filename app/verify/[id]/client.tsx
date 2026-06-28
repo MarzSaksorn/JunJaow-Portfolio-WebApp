@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, SealCheck, ArrowLeft, CopySimple, DownloadSimple } from "@phosphor-icons/react";
+import { ShieldCheck, SealCheck, ArrowLeft, CopySimple, DownloadSimple, ShareNetwork } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
 import { formatFileSize, fileIcon, iconClass } from "@/lib/file-icons";
 
@@ -18,6 +18,12 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
     } else {
       router.push("/");
     }
+  }
+
+  function shareUrl(platform: "line" | "facebook") {
+    const url = encodeURIComponent(window.location.href);
+    if (platform === "line") window.open(`https://social-plugins.line.me/lineit/share?url=${url}`, "_blank", "noopener");
+    else window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "noopener");
   }
 
   async function handleCopyUrl() {
@@ -64,6 +70,14 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
               <CopySimple weight="duotone" />
               <span>{copied ? "คัดลอกแล้ว" : "คัดลอกลิงก์"}</span>
             </button>
+            <div className="verify-share-group">
+              <button className="btn btn-secondary" onClick={() => shareUrl("line")} aria-label="แชร์ไปยัง LINE">
+                <ShareNetwork weight="duotone" /> LINE
+              </button>
+              <button className="btn btn-secondary" onClick={() => shareUrl("facebook")} aria-label="แชร์ไปยัง Facebook">
+                <ShareNetwork weight="duotone" /> Facebook
+              </button>
+            </div>
           </div>
         </div>
 

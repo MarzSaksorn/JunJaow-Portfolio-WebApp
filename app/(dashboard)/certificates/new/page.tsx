@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { logActivity } from "@/lib/activity";
@@ -21,6 +21,8 @@ export default function NewCertificatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [duplicates, setDuplicates] = useState<{ id: string; title: string }[]>([]);
+  const [checkingDup, setCheckingDup] = useState(false);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] || null;
@@ -36,6 +38,30 @@ export default function NewCertificatePage() {
     tags: "",
     issued_at: "",
   });
+
+  useEffect(() => {
+    if (!form.title || (!form.issuer && !form.academic_year)) {
+      setDuplicates([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      setCheckingDup(true);
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      let q = supabase
+        .from("certificates")
+        .select("id, title")
+        .eq("owner_id", user.id)
+        .eq("title", form.title);
+      if (form.issuer) q = q.eq("issuer", form.issuer);
+      if (form.academic_year) q = q.eq("academic_year", form.academic_year);
+      const { data } = await q;
+      setDuplicates((data || []) as { id: string; title: string }[]);
+      setCheckingDup(false);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [form.title, form.issuer, form.academic_year]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -137,6 +163,11 @@ export default function NewCertificatePage() {
       <div className="ws-body">
         <form className="form-card" onSubmit={handleSubmit} data-entrance-form>
           {error && <p className="form-error">{error}</p>}
+          {duplicates.length > 0 && (
+            <p className="form-warning">
+              พบประกาศนียบัตรที่ใกล้เคียงกัน {duplicates.length} รายการ{duplicates.map((d) => ` "${d.title}"`).join(", ")} — หากต้องการอัปโหลดซ้ำสามารถดำเนินการต่อได้
+            </p>
+          )}
 
           <div className="form-grid">
             <div className="form-col">

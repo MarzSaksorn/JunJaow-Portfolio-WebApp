@@ -38,6 +38,12 @@ export type Snapshot = {
   profile: SnapshotProfile | null;
   certificates: SnapshotCert[];
   generated_at: string;
+  sections?: {
+    skills: boolean;
+    activities: boolean;
+    contact: boolean;
+    bio: boolean;
+  };
 };
 
 export type TemplateProps = {

@@ -9,6 +9,14 @@
 
 When the user says "feat mode", "UI mode", or "UI fix mode" (or similar variations like "feat", "ui mode", "UI fix", etc., case-insensitive), load the corresponding skill first before proceeding with the task.
 
+## Workflow
+
+1. **feat mode** → build the feature
+2. **UI mode** → polish and design
+3. **UI fix mode** → fix anything broken
+
 ## Commit Message
 
 When the user says "commit message" or "commit messagee", just output the generated commit message. Do not stage, commit, push, or create branches.
+
+

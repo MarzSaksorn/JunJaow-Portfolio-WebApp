@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { logActivity } from "@/lib/activity";
@@ -36,6 +36,7 @@ export default function BulkUploadPage() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [duplicatesMap, setDuplicatesMap] = useState<Record<number, { id: string; title: string }[]>>({});
   const doneCount = entries.filter((e) => e.status === "done").length;
   const allDone = entries.length > 0 && doneCount === entries.length;
 
@@ -60,7 +61,35 @@ export default function BulkUploadPage() {
 
   function removeEntry(id: number) {
     setEntries((prev) => prev.filter((e) => e.id !== id));
+    setDuplicatesMap((prev) => { const n = { ...prev }; delete n[id]; return n; });
   }
+
+  useEffect(() => {
+    const pending = entries.filter((e) => e.status === "pending" && e.title);
+    if (pending.length === 0) return;
+    const t = setTimeout(async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      for (const entry of pending) {
+        let q = supabase
+          .from("certificates")
+          .select("id, title")
+          .eq("owner_id", user.id)
+          .eq("title", entry.title);
+        if (entry.issuer) q = q.eq("issuer", entry.issuer);
+        if (entry.academic_year) q = q.eq("academic_year", entry.academic_year);
+        const { data } = await q;
+        const found = (data || []) as { id: string; title: string }[];
+        setDuplicatesMap((prev) => {
+          if (JSON.stringify(prev[entry.id]) === JSON.stringify(found)) return prev;
+          return { ...prev, [entry.id]: found };
+        });
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [entries.map((e) => `${e.id}:${e.title}:${e.issuer}:${e.academic_year}`).join("|")]);
+
 
   async function handleSubmit() {
     const hasEmpty = entries.some((e) => !e.title.trim());
@@ -173,6 +202,11 @@ export default function BulkUploadPage() {
 
                   {entry.status === "pending" && (
                     <div className="bulk-card-body">
+                      {duplicatesMap[entry.id]?.length > 0 && (
+                        <p className="bulk-dup-warning">
+                          พบที่ใกล้เคียง: {duplicatesMap[entry.id].map((d) => `"${d.title}"`).join(", ")}
+                        </p>
+                      )}
                       <div className="bulk-form-row">
                         <IssuerInput
                           value={entry.issuer}

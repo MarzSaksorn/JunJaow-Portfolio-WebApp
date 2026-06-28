@@ -6,9 +6,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useEntranceAnimation } from "@/lib/animations";
 import { logActivity } from "@/lib/activity";
-import { MagnifyingGlass, CheckSquare, SquaresFour, Trash, PencilLine, CalendarBlank, Tag, X, Check, CaretDown } from "@phosphor-icons/react";
+import { MagnifyingGlass, CheckSquare, SquaresFour, Trash, PencilLine, CalendarBlank, Tag, X, Check, CaretDown, DownloadSimple } from "@phosphor-icons/react";
 import { fileIcon, iconClass } from "@/lib/file-icons";
 import { TagInput } from "@/app/components/tag-input";
+import JSZip from "jszip";
 import type { Database } from "@/lib/supabase/types";
 
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
@@ -49,6 +50,9 @@ export function CertificateList() {
   const selectedYear = searchParams.get("year") || "";
   const selectedCategory = searchParams.get("category") || "";
   const searchQuery = searchParams.get("q") || "";
+  const dateFrom = searchParams.get("date_from") || "";
+  const dateTo = searchParams.get("date_to") || "";
+  const fileType = searchParams.get("file_type") || "";
 
   const years = ["2569", "2570", "2571", "2572"];
 
@@ -71,11 +75,16 @@ export function CertificateList() {
     }
     if (selectedYear) dbQuery = dbQuery.eq("academic_year", selectedYear);
     if (selectedCategory) dbQuery = dbQuery.eq("category", selectedCategory);
+    if (dateFrom) dbQuery = dbQuery.gte("issued_at", dateFrom);
+    if (dateTo) dbQuery = dbQuery.lte("issued_at", dateTo);
+    if (fileType === "image") dbQuery = dbQuery.ilike("file_type", "image/%");
+    else if (fileType === "pdf") dbQuery = dbQuery.ilike("file_type", "%pdf%");
+    else if (fileType === "doc") dbQuery = dbQuery.or("file_type.ilike.%doc%,file_type.ilike.%word%,file_type.ilike.%document%");
 
     const { data } = await dbQuery;
     setCertificates(data || []);
     setLoading(false);
-  }, [selectedYear, selectedCategory, searchQuery]);
+  }, [selectedYear, selectedCategory, searchQuery, dateFrom, dateTo, fileType]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -152,6 +161,31 @@ export function CertificateList() {
     load();
   }
 
+  async function downloadZip() {
+    const ids = Array.from(selectedIds);
+    const selected = certificates.filter((c) => ids.includes(c.id));
+    if (selected.length === 0) return;
+
+    const zip = new JSZip();
+    for (const cert of selected) {
+      if (!cert.file_url) continue;
+      try {
+        const res = await fetch(cert.file_url);
+        const blob = await res.blob();
+        const name = cert.file_name || `${cert.title}.${blob.type.split("/")[1] || "file"}`;
+        zip.file(name, blob);
+      } catch { /* skip failed */ }
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `certificates-${new Date().toISOString().split("T")[0]}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function executeBatchTags() {
     const supabase = createClient();
     const ids = Array.from(selectedIds);
@@ -170,7 +204,7 @@ export function CertificateList() {
 
   useEntranceAnimation(rootRef);
 
-  const hasFilters = selectedYear || selectedCategory || searchQuery;
+  const hasFilters = selectedYear || selectedCategory || searchQuery || dateFrom || dateTo || fileType;
   const isFiltered = hasFilters && !loading;
   const isEmpty = certificates.length === 0 && !loading;
   const isFresh = certificates.length === 0 && !loading && !hasFilters;
@@ -207,7 +241,44 @@ export function CertificateList() {
           </div>
         </div>
 
-        {(selectedYear || selectedCategory) && (
+        <div className="filter-section">
+          <h4>ประเภทไฟล์</h4>
+          {(["", "image", "pdf", "doc"] as const).map((ft) => (
+            <button
+              key={ft}
+              className={`filter-btn${fileType === ft ? " active" : ""}`}
+              onClick={() => updateFilter("file_type", fileType === ft ? "" : ft)}
+            >
+              {ft === "" ? "ทั้งหมด" : ft === "image" ? "รูปภาพ" : ft === "pdf" ? "PDF" : "เอกสาร"}
+            </button>
+          ))}
+        </div>
+
+        <div className="filter-section">
+          <h4>ช่วงวันที่ออก</h4>
+          <div className="filter-date-group">
+            <label className="filter-date-label">
+              จาก
+              <input
+                type="date"
+                className="filter-date-input"
+                value={dateFrom}
+                onChange={(e) => updateFilter("date_from", e.target.value)}
+              />
+            </label>
+            <label className="filter-date-label">
+              ถึง
+              <input
+                type="date"
+                className="filter-date-input"
+                value={dateTo}
+                onChange={(e) => updateFilter("date_to", e.target.value)}
+              />
+            </label>
+          </div>
+        </div>
+
+        {hasFilters && (
           <button className="filter-clear" onClick={clearFilters}>
             ล้างตัวกรอง
           </button>
@@ -270,6 +341,9 @@ export function CertificateList() {
               </button>
               <button className="btn btn-sm btn-secondary" onClick={() => setBatchAction("year")}>
                 <CalendarBlank weight="duotone" size={14} /> เปลี่ยนปี
+              </button>
+              <button className="btn btn-sm btn-secondary" onClick={downloadZip}>
+                <DownloadSimple weight="duotone" size={14} /> ZIP
               </button>
               <button className="btn btn-sm btn-danger" onClick={() => setBatchAction("delete")}>
                 <Trash weight="duotone" size={14} /> ลบ

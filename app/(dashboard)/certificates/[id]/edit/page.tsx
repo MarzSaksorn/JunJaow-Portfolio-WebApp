@@ -42,6 +42,30 @@ export default function EditCertificatePage() {
     title: "", issuer: "", description: "",
     academic_year: "", category: "", tags: "", issued_at: "",
   });
+  const [duplicates, setDuplicates] = useState<{ id: string; title: string }[]>([]);
+
+  useEffect(() => {
+    if (!form.title || (!form.issuer && !form.academic_year) || !id) {
+      setDuplicates([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      let q = supabase
+        .from("certificates")
+        .select("id, title")
+        .eq("owner_id", user.id)
+        .eq("title", form.title)
+        .neq("id", id);
+      if (form.issuer) q = q.eq("issuer", form.issuer);
+      if (form.academic_year) q = q.eq("academic_year", form.academic_year);
+      const { data } = await q;
+      setDuplicates((data || []) as { id: string; title: string }[]);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [form.title, form.issuer, form.academic_year, id]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -173,6 +197,11 @@ export default function EditCertificatePage() {
       <div className="ws-body">
         <form className="form-card" onSubmit={handleSubmit} data-entrance-form>
           {error && <p className="form-error">{error}</p>}
+          {duplicates.length > 0 && (
+            <p className="form-warning">
+              พบประกาศนียบัตรอื่นที่ใกล้เคียงกัน {duplicates.length} รายการ{duplicates.map((d) => ` "${d.title}"`).join(", ")}
+            </p>
+          )}
 
           <div className="form-grid">
             <div className="form-col">

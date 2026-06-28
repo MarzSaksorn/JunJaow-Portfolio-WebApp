@@ -23,6 +23,7 @@ function formatDate(date: string | null) {
 export function ModernTemplate({ snapshot }: TemplateProps) {
   const profile = snapshot?.profile;
   const certs = snapshot?.certificates || [];
+  const sec = snapshot?.sections || { skills: true, activities: true, contact: true, bio: true };
 
   return (
     <div className="modern-portfolio">
@@ -41,21 +42,21 @@ export function ModernTemplate({ snapshot }: TemplateProps) {
             {profile.school && <span className="dot-tag tag-clip">{profile.school}</span>}
             {profile.program && <span className="dot-tag tag-lavender">{profile.program}</span>}
           </div>
-          {profile.bio && <p className="modern-bio">{profile.bio}</p>}
-          {profile.contact && (
+          {sec.bio && profile.bio && <p className="modern-bio">{profile.bio}</p>}
+          {sec.contact && profile.contact && (
             <p className="modern-contact">
               <Envelope weight="duotone" size={14} />
               {profile.contact.email || profile.contact.phone || profile.contact.line || ""}
             </p>
           )}
-          {profile.skills && profile.skills.length > 0 && (
+          {sec.skills && profile.skills && profile.skills.length > 0 && (
             <div className="modern-tags">
               {profile.skills.map((s) => (
                 <DotTag key={s} label={s} />
               ))}
             </div>
           )}
-          {profile.activities && profile.activities.length > 0 && (
+          {sec.activities && profile.activities && profile.activities.length > 0 && (
             <div className="modern-activities">
               {profile.activities.map((a, i) => (
                 <span key={i} className="modern-activity">

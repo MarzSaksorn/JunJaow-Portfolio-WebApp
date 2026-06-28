@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, FilePdf } from "@phosphor-icons/react";
+import { ArrowLeft, FilePdf, ShareNetwork } from "@phosphor-icons/react";
 import { useState } from "react";
 import {
   ModernTemplate,
@@ -64,6 +64,12 @@ export function PortfolioView({ page }: { page: PageData }) {
   const certs = snap?.certificates || [];
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  function shareUrl(platform: "line" | "facebook") {
+    const url = encodeURIComponent(window.location.href);
+    if (platform === "line") window.open(`https://social-plugins.line.me/lineit/share?url=${url}`, "_blank", "noopener");
+    else window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "noopener");
+  }
+
   async function downloadPdf() {
     setPdfLoading(true);
     try {
@@ -106,7 +112,15 @@ export function PortfolioView({ page }: { page: PageData }) {
               Jj
             </Link>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={downloadPdf} disabled={pdfLoading} style={{ marginLeft: "auto" }}>
+          <div className="portfolio-share-group">
+            <button className="btn btn-secondary btn-sm" onClick={() => shareUrl("line")} aria-label="แชร์ LINE">
+              <ShareNetwork weight="duotone" size={14} /> LINE
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => shareUrl("facebook")} aria-label="แชร์ Facebook">
+              <ShareNetwork weight="duotone" size={14} /> FB
+            </button>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={downloadPdf} disabled={pdfLoading}>
             <FilePdf weight="duotone" size={16} />
             {pdfLoading ? "กำลังสร้าง..." : "ดาวน์โหลด PDF"}
           </button>

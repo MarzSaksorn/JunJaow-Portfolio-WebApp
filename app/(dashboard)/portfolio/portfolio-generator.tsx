@@ -28,6 +28,12 @@ export function PortfolioGenerator() {
   const [certSearch, setCertSearch] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
+  const [sections, setSections] = useState({
+    skills: true,
+    activities: true,
+    contact: true,
+    bio: true,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +137,7 @@ export function PortfolioGenerator() {
       })),
       generated_at: new Date().toISOString(),
       template: template,
+      sections: sections,
     };
 
     const { error: insertError } = await supabase.from("portfolio_pages").insert({
@@ -213,6 +220,22 @@ export function PortfolioGenerator() {
                     </span>
                   )}
                 </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-field" style={{ marginTop: 12 }}>
+            <label>ส่วนที่แสดง</label>
+            <div className="section-toggles">
+              {(["skills", "activities", "contact", "bio"] as const).map((s) => (
+                <label key={s} className="task-check">
+                  <input
+                    type="checkbox"
+                    checked={sections[s]}
+                    onChange={() => setSections((prev) => ({ ...prev, [s]: !prev[s] }))}
+                  />
+                  <span>{s === "skills" ? "ทักษะ" : s === "activities" ? "กิจกรรม" : s === "contact" ? "ช่องทางติดต่อ" : "ประวัติ"}</span>
+                </label>
               ))}
             </div>
           </div>
