@@ -107,16 +107,14 @@ export default function LoginPage() {
           {mode === "login" ? "ยังไม่มีบัญชี? สมัครสมาชิก" : "มีบัญชีแล้ว? เข้าสู่ระบบ"}
         </button>
 
-        {process.env.NODE_ENV !== "production" && (
-          <button
-            className="login-fill-btn"
-            type="button"
-            data-animate="fade-up" data-delay="0.45"
-            onClick={() => { setEmail("jj@gmail.com"); setPassword("aaaaaa"); }}
-          >
-            {"กดตรงนี้นะคับเธอ~~"}
-          </button>
-        )}
+        <button
+          className="login-fill-btn"
+          type="button"
+          data-animate="fade-up" data-delay="0.45"
+          onClick={() => { setEmail("jj@gmail.com"); setPassword("aaaaaa"); }}
+        >
+          {"กดตรงนี้นะคับเธอ~~"}
+        </button>
       </div>
     </main>
   );
