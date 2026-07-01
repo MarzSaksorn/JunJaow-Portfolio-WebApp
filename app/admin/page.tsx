@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRef } from "react";
 import { createClient } from "@/lib/supabase/browser";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
 import { Users, Certificate, FileText, User } from "@phosphor-icons/react";
 
 export default function AdminDashboard() {
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCertificates: 0,
@@ -43,8 +46,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div>
-      <header className="ws-header">
+    <div ref={rootRef}>
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">แผงควบคุม</p>
           <h1>แดชบอร์ดผู้ดูแลระบบ</h1>
@@ -52,11 +55,11 @@ export default function AdminDashboard() {
       </header>
 
       <div className="ws-body">
-        <div className="admin-metric-grid">
+        <div className="admin-metric-grid" data-animate="fade-up" data-order="2">
           {metrics.map((m) => {
             const Icon = m.icon;
             return (
-              <div key={m.label} className={`admin-metric ${m.color}`}>
+              <div key={m.label} className={`admin-metric ${m.color}`} data-animate-stagger>
                 <Icon weight="duotone" size={28} />
                 <strong>{m.value}</strong>
                 <span>{m.label}</span>
@@ -72,7 +75,7 @@ export default function AdminDashboard() {
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
               {stats.recentUsers.map((u) => (
-                <div key={u.id} className="admin-user-row">
+                <div key={u.id} className="admin-user-row" data-animate-stagger>
                   <div className="admin-user-email">{u.email}</div>
                   <div className="admin-user-date">
                     {new Date(u.created_at).toLocaleDateString("th-TH")}

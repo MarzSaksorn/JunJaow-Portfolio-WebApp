@@ -1,15 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+
 import type { Database } from "@/lib/supabase/types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export default function ProfilePage() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -156,11 +157,9 @@ export default function ProfilePage() {
     setLoading(false);
   }
 
-  useEntranceAnimation(rootRef);
-
   return (
     <div ref={rootRef}>
-      <header className="ws-header">
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">แหล่งข้อมูล</p>
           <h1>ข้อมูลส่วนตัว</h1>
@@ -168,7 +167,7 @@ export default function ProfilePage() {
       </header>
 
       <div className="ws-body">
-        <form className="form-card" onSubmit={handleSubmit} data-entrance-form>
+        <form className="form-card" onSubmit={handleSubmit} data-animate="fade-up" data-order="2">
           {error && <p className="form-error">{error}</p>}
 
           <div className="profile-head">
@@ -196,46 +195,46 @@ export default function ProfilePage() {
 
           <div className="form-grid">
             <div className="form-col">
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>ชื่อ-นามสกุล</label>
                 <input name="full_name" value={form.full_name} onChange={handleChange} placeholder="ชื่อ นามสกุล" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>ชื่อเล่น</label>
                 <input name="nickname" value={form.nickname} onChange={handleChange} placeholder="ชื่อเล่น" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>โรงเรียน</label>
                 <input name="school" value={form.school} onChange={handleChange} placeholder="ชื่อโรงเรียน" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>แผนการเรียน</label>
                 <input name="program" value={form.program} onChange={handleChange} placeholder="เช่น วิทย์-คณิต" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>ประวัติย่อ</label>
                 <textarea name="bio" value={form.bio} onChange={handleChange} rows={3} placeholder="สรุปประวัติส่วนตัว" />
               </div>
             </div>
 
             <div className="form-col">
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>ทักษะ (คั่นด้วยคอมม่า)</label>
                 <input name="skills" value={form.skills} onChange={handleChange} placeholder="พูดในที่สาธารณะ, ภาวะผู้นำ" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>กิจกรรม (คั่นด้วยคอมม่า)</label>
                 <input name="activities" value={form.activities} onChange={handleChange} placeholder="อาสาสมัคร, ชมรมวิทยาศาสตร์" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>อีเมล</label>
                 <input name="contact_email" type="email" value={form.contact_email} onChange={handleChange} placeholder="email@example.com" />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>เบอร์โทรศัพท์</label>
                 <input name="contact_phone" value={form.contact_phone} onChange={handleChange} placeholder="เช่น 081..." />
               </div>
-              <div className="form-field">
+              <div className="form-field" data-animate-stagger>
                 <label>ไลน์ไอดี</label>
                 <input name="contact_line" value={form.contact_line} onChange={handleChange} />
               </div>

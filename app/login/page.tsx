@@ -1,23 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+
 
 export default function LoginPage() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  useEntranceAnimation(rootRef);
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     const supabase = createClient();
@@ -28,7 +30,7 @@ export default function LoginPage() {
     } else {
       result = await supabase.auth.signUp({ email, password });
       if (!result.error) {
-        setError("สมัครสมาชิกสำเร็จ");
+        setSuccess("สมัครสมาชิกสำเร็จ");
         setLoading(false);
         return;
       }
@@ -45,17 +47,17 @@ export default function LoginPage() {
 
   return (
     <main className="login-page" id="main-content" ref={rootRef}>
-      <div className="login-card" data-entrance-scale>
+      <div className="login-card" data-animate="scale-in">
         <div className="login-card-clip" />
 
-        <div className="login-header">
+        <div className="login-header" data-animate="fade-up" data-delay="0.1">
           <div className="login-emblem">Jj</div>
           <h1>โต๊ะพอร์ตโฟลิโอ</h1>
           <p className="login-subtitle">พื้นที่ส่วนตัวของคุณ</p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit} data-entrance-form>
-          <div className="login-field">
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="login-field" data-animate="fade-up" data-delay="0.2">
             <label htmlFor="email">อีเมล</label>
             <input
               id="email"
@@ -67,7 +69,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="login-field">
+          <div className="login-field" data-animate="fade-up" data-delay="0.3">
             <label htmlFor="password">รหัสผ่าน</label>
             <input
               id="password"
@@ -81,8 +83,9 @@ export default function LoginPage() {
           </div>
 
           {error && <p className="login-error">{error}</p>}
+          {success && <p className="login-success">{success}</p>}
 
-          <button className="login-submit" type="submit" disabled={loading}>
+          <button className="login-submit" type="submit" disabled={loading} data-animate="fade-up" data-delay="0.35">
             {loading
               ? "โปรดรอ..."
               : mode === "login"
@@ -94,21 +97,26 @@ export default function LoginPage() {
         <button
           className="login-switch"
           type="button"
+          data-animate="fade-up" data-delay="0.4"
           onClick={() => {
             setMode(mode === "login" ? "signup" : "login");
             setError("");
+            setSuccess("");
           }}
         >
           {mode === "login" ? "ยังไม่มีบัญชี? สมัครสมาชิก" : "มีบัญชีแล้ว? เข้าสู่ระบบ"}
         </button>
 
-        <button
-          className="login-fill-btn"
-          type="button"
-          onClick={() => { setEmail("jj@gmail.com"); setPassword("aaaaaa"); }}
-        >
-          {"กดตรงนี้นะคับเธอ~~"}
-        </button>
+        {process.env.NODE_ENV !== "production" && (
+          <button
+            className="login-fill-btn"
+            type="button"
+            data-animate="fade-up" data-delay="0.45"
+            onClick={() => { setEmail("jj@gmail.com"); setPassword("aaaaaa"); }}
+          >
+            {"กดตรงนี้นะคับเธอ~~"}
+          </button>
+        )}
       </div>
     </main>
   );

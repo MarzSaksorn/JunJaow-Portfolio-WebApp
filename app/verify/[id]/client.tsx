@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
 import { ShieldCheck, SealCheck, ArrowLeft, CopySimple, DownloadSimple, ShareNetwork } from "@phosphor-icons/react";
 import type { Database } from "@/lib/supabase/types";
 import { formatFileSize, fileIcon, iconClass } from "@/lib/file-icons";
@@ -9,6 +10,7 @@ import { formatFileSize, fileIcon, iconClass } from "@/lib/file-icons";
 type Certificate = Database["public"]["Tables"]["certificates"]["Row"];
 
 export function CertificateVerify({ certificate }: { certificate: Certificate }) {
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
@@ -49,11 +51,11 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
   ].filter(r => r.value);
 
   return (
-    <main className="verify-layout" id="main-content">
-      <div className="verify-card">
+    <main className="verify-layout" id="main-content" ref={rootRef}>
+      <div className="verify-card" data-animate="scale-in">
         <div className="verify-accent-bar" />
 
-        <div className="verify-header">
+        <div className="verify-header" data-animate="fade-up" data-delay="0.15">
           <div className="verify-badge">
             <ShieldCheck weight="fill" size={16} />
             <span>ตรวจสอบแล้ว</span>
@@ -81,7 +83,7 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
           </div>
         </div>
 
-        <div className="verify-body">
+        <div className="verify-body" data-animate="fade-up" data-delay="0.25">
           <div className="verify-watermark" aria-hidden="true">VERIFIED</div>
 
           <h1 className="verify-title">{certificate.title}</h1>
@@ -127,7 +129,7 @@ export function CertificateVerify({ certificate }: { certificate: Certificate })
           )}
         </div>
 
-        <div className="verify-footer">
+        <div className="verify-footer" data-animate="fade-up" data-delay="0.35">
           <span className="verify-footer-id">
             <span className="verify-footer-id-label">ID</span>
             <code className="verify-footer-id-code">{certificate.id}</code>

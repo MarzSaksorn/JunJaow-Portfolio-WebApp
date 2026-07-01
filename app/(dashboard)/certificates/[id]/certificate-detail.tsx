@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+
 import { logActivity } from "@/lib/activity";
 import { fileIcon, iconClass, formatFileSize } from "@/lib/file-icons";
 import {
@@ -29,7 +30,7 @@ const dotTagColor = (tag: string) => {
 };
 
 export function CertificateDetail() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -84,8 +85,6 @@ export function CertificateDetail() {
     }
   }
 
-  useEntranceAnimation(rootRef);
-
   if (!certificate) return null;
 
   const isImage = certificate.file_type?.startsWith("image/");
@@ -103,7 +102,7 @@ export function CertificateDetail() {
 
   return (
     <div ref={rootRef}>
-      <header className="ws-header">
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">
             {certificate.academic_year
@@ -146,9 +145,9 @@ export function CertificateDetail() {
         onCancel={() => setShowDelete(false)}
       />
 
-      <div className="ws-body">
-        <div className="detail-layout" data-entrance-detail>
-          <div className="detail-preview-section" data-entrance-preview>
+      <div className="ws-body" data-animate="fade-up" data-order="2">
+        <div className="detail-layout">
+          <div className="detail-preview-section">
             {isImage && certificate.file_url ? (
               <div className="detail-img-rotate">
                 <img
@@ -191,7 +190,7 @@ export function CertificateDetail() {
                   {fileIcon(certificate.file_type || "", true)}
                 </div>
                 {certificate.file_name && (
-                  <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8 }}>
+                  <p className="ink-muted fz-13 mt-8">
                     {certificate.file_name}
                     {fileSize ? ` (${fileSize})` : ""}
                   </p>
@@ -201,8 +200,7 @@ export function CertificateDetail() {
                     href={certificate.file_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn btn-primary"
-                    style={{ marginTop: 8 }}
+                    className="btn btn-primary mt-8"
                   >
                     <DownloadSimple weight="duotone" /> ดาวน์โหลดไฟล์
                   </a>

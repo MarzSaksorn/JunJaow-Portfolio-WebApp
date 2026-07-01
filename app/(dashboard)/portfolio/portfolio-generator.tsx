@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
-import { MagnifyingGlass, ListDashes, CheckCircle, Trash, FilePdf, GearSix, ArrowRight } from "@phosphor-icons/react";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+
+import { MagnifyingGlass, ListDashes, CheckCircle, Trash, FilePdf, GearSix, ArrowRight, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { TEMPLATES } from "@/app/components/portfolio-templates";
 import type { TemplateType } from "@/app/components/portfolio-templates";
 import type { Database } from "@/lib/supabase/types";
@@ -16,7 +17,7 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type PortfolioPage = Database["public"]["Tables"]["portfolio_pages"]["Row"];
 
 export function PortfolioGenerator() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -28,6 +29,7 @@ export function PortfolioGenerator() {
   const [error, setError] = useState("");
   const [certSearch, setCertSearch] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showDeletePage, setShowDeletePage] = useState<PortfolioPage | null>(null);
   const [showPdfError, setShowPdfError] = useState(false);
@@ -166,8 +168,6 @@ export function PortfolioGenerator() {
     setShowDeletePage(null);
   }
 
-  useEntranceAnimation(rootRef);
-
   const completionPct = profile
     ? [profile.full_name, profile.school, profile.bio, profile.skills?.length, profile.activities?.length]
         .filter(Boolean).length * 20
@@ -176,7 +176,7 @@ export function PortfolioGenerator() {
   return (
     <div ref={rootRef}>
       <div className="pw-layout">
-        <div className="pw-main" data-entrance-panel>
+        <div className="pw-main" data-animate="fade-up" data-order="1">
           <div className="pw-field">
             <label className="pw-label">ตั้งชื่อพอร์ตโฟลิโอ</label>
             <input
@@ -187,44 +187,65 @@ export function PortfolioGenerator() {
             />
           </div>
 
-          <div className="pw-field">
-            <label className="pw-label">แม่แบบ</label>
-            <div className="pw-templates">
-              {TEMPLATES.map((t) => (
-                <button
-                  key={t.id}
-                  className={`pw-template${template === t.id ? " active" : ""}`}
-                  onClick={() => setTemplate(t.id)}
-                  type="button"
-                >
-                  <div className={`pw-template-icon template-icon-${t.id}`} />
-                  <div className="pw-template-body">
-                    <strong>{t.name}</strong>
-                    <p>{t.desc}</p>
-                  </div>
-                  {template === t.id && (
-                    <CheckCircle weight="fill" size={16} className="pw-template-check" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+          <button
+            className="pw-advanced-toggle"
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <GearSix weight="duotone" size={14} />
+            ตั้งค่าเพิ่มเติม
+            <CaretDown
+              weight="duotone"
+              size={12}
+              style={{
+                transform: showAdvanced ? "rotate(180deg)" : undefined,
+                transition: "transform var(--duration-fast) var(--ease-out)",
+              }}
+            />
+          </button>
 
-          <div className="pw-field">
-            <label className="pw-label">ส่วนที่แสดง</label>
-            <div className="pw-toggles">
-              {(["skills", "activities", "contact", "bio"] as const).map((s) => (
-                <label key={s} className="pw-toggle">
-                  <input
-                    type="checkbox"
-                    checked={sections[s]}
-                    onChange={() => setSections((prev) => ({ ...prev, [s]: !prev[s] }))}
-                  />
-                  <span>{s === "skills" ? "ทักษะ" : s === "activities" ? "กิจกรรม" : s === "contact" ? "ช่องทางติดต่อ" : "ประวัติ"}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          {showAdvanced && (
+            <>
+              <div className="pw-field">
+                <label className="pw-label">แม่แบบ</label>
+                <div className="pw-templates">
+                  {TEMPLATES.map((t) => (
+                    <button
+                      key={t.id}
+                      className={`pw-template${template === t.id ? " active" : ""}`}
+                      onClick={() => setTemplate(t.id)}
+                      type="button"
+                    >
+                      <div className={`pw-template-icon template-icon-${t.id}`} />
+                      <div className="pw-template-body">
+                        <strong>{t.name}</strong>
+                        <p>{t.desc}</p>
+                      </div>
+                      {template === t.id && (
+                        <CheckCircle weight="fill" size={16} className="pw-template-check" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pw-field">
+                <label className="pw-label">ส่วนที่แสดง</label>
+                <div className="pw-toggles">
+                  {(["skills", "activities", "contact", "bio"] as const).map((s) => (
+                    <label key={s} className="pw-toggle">
+                      <input
+                        type="checkbox"
+                        checked={sections[s]}
+                        onChange={() => setSections((prev) => ({ ...prev, [s]: !prev[s] }))}
+                      />
+                      <span>{s === "skills" ? "ทักษะ" : s === "activities" ? "กิจกรรม" : s === "contact" ? "ช่องทางติดต่อ" : "ประวัติ"}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="pw-field">
             <label className="pw-label">เลือกประกาศนียบัตร</label>
@@ -237,9 +258,9 @@ export function PortfolioGenerator() {
                 placeholder="พิมพ์ชื่อหรือผู้ออก..."
               />
             </div>
-            <div className="pw-certs" data-entrance>
+            <div className="pw-certs">
               {filteredCerts.length === 0 && (
-                <p style={{ color: "var(--ink-muted)", fontSize: 13, padding: "8px 0" }}>
+                <p className="ink-muted fz-13 py-8">
                   {certSearch ? "ไม่พบประกาศนียบัตรที่ค้นหา" : "ยังไม่มีประกาศนียบัตร"}
                 </p>
               )}
@@ -270,7 +291,27 @@ export function PortfolioGenerator() {
                       <p>{cert.issuer}</p>
                     </div>
                     {isSelected && (
-                      <span className="pw-cert-num">{sortIdx + 1}</span>
+                      <>
+                        <button
+                          type="button"
+                          className="pw-cert-move"
+                          disabled={sortIdx === 0}
+                          onClick={(e) => { e.preventDefault(); moveCert(sortIdx, sortIdx - 1); }}
+                          aria-label="เลื่อนขึ้น"
+                        >
+                          <CaretUp weight="duotone" size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="pw-cert-move"
+                          disabled={sortIdx === selectedIds.length - 1}
+                          onClick={(e) => { e.preventDefault(); moveCert(sortIdx, sortIdx + 1); }}
+                          aria-label="เลื่อนลง"
+                        >
+                          <CaretDown weight="duotone" size={12} />
+                        </button>
+                        <span className="pw-cert-num">{sortIdx + 1}</span>
+                      </>
                     )}
                   </label>
                 );
@@ -294,16 +335,16 @@ export function PortfolioGenerator() {
           </button>
         </div>
 
-        <aside className="pw-side" data-entrance-panel>
+        <aside className="pw-side" data-animate="fade-up" data-order="2">
           <div className="pw-meter">
             <div className="pw-meter-accent" />
             <p className="ws-eyebrow">ความพร้อม</p>
-            <div className="meter" style={{ marginTop: 10 }}>
+            <div className="meter mt-10">
               <span className="meter-fill" style={{ width: `${completionPct}%` }} />
             </div>
             <span className="meter-label">{completionPct}% พร้อมสร้าง</span>
             {(!profile || !profile.full_name) && (
-              <Link className="btn btn-secondary btn-full" href="/profile" style={{ marginTop: 12 }}>
+              <Link className="btn btn-secondary btn-full mt-12" href="/profile">
                 กรอกโปรไฟล์ก่อน
               </Link>
             )}

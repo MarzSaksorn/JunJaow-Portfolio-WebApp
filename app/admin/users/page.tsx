@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
 import { Trash, UserPlus } from "@phosphor-icons/react";
 
 type ManagedUser = {
@@ -13,6 +14,7 @@ type ManagedUser = {
 };
 
 export default function AdminUsersPage() {
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -72,8 +74,8 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div>
-      <header className="ws-header">
+    <div ref={rootRef}>
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">จัดการผู้ใช้</p>
           <h1>ผู้ใช้ทั้งหมด</h1>
@@ -88,7 +90,7 @@ export default function AdminUsersPage() {
         </div>
       </header>
 
-      <div className="ws-body">
+      <div className="ws-body" data-animate="fade-up" data-order="2">
         {showCreate && (
           <form className="panel" onSubmit={handleCreate} style={{ marginBottom: 16 }}>
             <h4 style={{ margin: "0 0 12px" }}>สร้างผู้ใช้ใหม่</h4>
@@ -148,7 +150,7 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} data-animate-stagger>
                     <td className="admin-cell-email">{u.email}</td>
                     <td>{new Date(u.created_at).toLocaleDateString("th-TH")}</td>
                     <td>{u.certificate_count}</td>

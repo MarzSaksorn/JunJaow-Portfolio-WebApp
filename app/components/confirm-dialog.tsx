@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "@phosphor-icons/react";
 
 type Props = {
   open: boolean;
   title: string;
-  message: string;
+  message?: string;
+  children?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
+  confirmDisabled?: boolean;
+  confirmIcon?: ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
 };
 
-export function ConfirmDialog({ open, title, message, confirmLabel = "ยืนยัน", cancelLabel = "ยกเลิก", danger, onConfirm, onCancel }: Props) {
+export function ConfirmDialog({ open, title, message, children, confirmLabel = "ยืนยัน", cancelLabel = "ยกเลิก", danger, confirmDisabled, confirmIcon, onConfirm, onCancel }: Props) {
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -41,13 +44,13 @@ export function ConfirmDialog({ open, title, message, confirmLabel = "ยืน�
             <X weight="duotone" size={18} />
           </button>
         </div>
-        <p className="confirm-message">{message}</p>
+        {children ? children : <p className="confirm-message">{message}</p>}
         <div className="modal-actions">
           <button className="btn btn-secondary" onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button className={`btn ${danger ? "btn-danger" : "btn-primary"}`} onClick={onConfirm} ref={confirmRef}>
-            {confirmLabel}
+          <button className={`btn ${danger ? "btn-danger" : "btn-primary"}`} onClick={onConfirm} disabled={confirmDisabled} ref={confirmRef}>
+            {confirmIcon}{confirmLabel}
           </button>
         </div>
       </div>

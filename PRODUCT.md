@@ -18,7 +18,8 @@ Bold, creative, playful. The interface should have character — purple/pink per
 
 ## Anti-references
 
-- No CSS gradients as generic decoration — specific gradient exceptions: brand mark (violet→pink), hero card accent glow, login page background, year tab tint overlays
+- No CSS gradients as generic decoration — specific gradient exceptions: brand mark (violet→pink), hero card accent glow, login page background, year tab tint overlays, portfolio hero name text (ink→clip), verify page accent bar (mint→clip)
+- No decorative `border-left` as content accent on cards/containers — the banned pattern is `border-left` applied to a container. Intentional positioned accent `<div>` elements (4px dashboard flap strip, portfolio meter strip) are allowed for their specific semantic roles.
 - No AI-generated heuristics or generic motion — GSAP entrance animations are used for page-entry choreography (fade-up, scale, slide) and respect `prefers-reduced-motion` via `gsap.matchMedia()`
 - No AI-sounding words or clichés — no "unlock your potential", "supercharge", "elevate your journey". Copy is direct and specific, in Thai.
 - No SaaS-cream palette, no side-stripe borders, no glassmorphism as default, no numbered section markers (01/02/03 scaffolding).

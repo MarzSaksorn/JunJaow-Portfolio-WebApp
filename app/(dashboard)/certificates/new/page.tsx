@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+
 import { logActivity } from "@/lib/activity";
 import { fileIcon, iconClass, formatFileSize } from "@/lib/file-icons";
+import { compressImage, compressionLabel } from "@/lib/image-compression";
+import type { CompressionResult } from "@/lib/image-compression";
+import { createDropHandlers } from "@/lib/drag-drop";
+import DropOverlay from "@/app/components/drop-overlay";
 import { TagInput } from "@/app/components/tag-input";
 import { IssuerInput } from "@/app/components/issuer-input";
 
@@ -21,13 +25,39 @@ export default function NewCertificatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [compression, setCompression] = useState<CompressionResult | null>(null);
+  const [compressing, setCompressing] = useState(false);
   const [duplicates, setDuplicates] = useState<{ id: string; title: string }[]>([]);
   const [checkingDup, setCheckingDup] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0] || null;
+  async function handleFile(f: File | null) {
     setFile(f);
+    if (f && f.type.startsWith("image/")) {
+      setCompressing(true);
+      const result = await compressImage(f);
+      setCompression(result);
+      setCompressing(false);
+    } else {
+      setCompression(null);
+    }
   }
+
+  async function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    handleFile(e.target.files?.[0] || null);
+  }
+
+  const dh = (() => {
+    const h = createDropHandlers((files) => {
+      if (files.length > 0) handleFile(files[0]);
+    });
+    return {
+      onDragOver: h.onDragOver,
+      onDragEnter: (e: React.DragEvent) => { h.onDragEnter(); setDragOver(true); },
+      onDragLeave: (e: React.DragEvent) => { h.onDragLeave(); setDragOver(false); },
+      onDrop: (e: React.DragEvent) => { setDragOver(false); h.onDrop(e); },
+    };
+  })();
 
   const [form, setForm] = useState({
     title: "",
@@ -94,10 +124,11 @@ export default function NewCertificatePage() {
     let fileSize = 0;
 
     if (file) {
-      fileStoragePath = `${user.id}/${Date.now()}_${file.name}`;
+      const uploadFile = compression?.file || file;
+      fileStoragePath = `${user.id}/${Date.now()}_${uploadFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from("certificate-files")
-        .upload(fileStoragePath, file);
+        .upload(fileStoragePath, uploadFile);
 
       if (uploadError) {
         setError(uploadError.message);
@@ -110,9 +141,9 @@ export default function NewCertificatePage() {
         .getPublicUrl(fileStoragePath);
 
       fileUrl = urlData.publicUrl;
-      fileName = file.name;
-      fileType = file.type;
-      fileSize = file.size;
+      fileName = uploadFile.name;
+      fileType = uploadFile.type;
+      fileSize = uploadFile.size;
     }
 
     const tags = form.tags
@@ -149,10 +180,9 @@ export default function NewCertificatePage() {
     router.push("/certificates");
   }
 
-  useEntranceAnimation(rootRef);
-
   return (
     <div ref={rootRef}>
+      <DropOverlay onDrop={(files) => { if (files.length > 0) handleFile(files[0]); }} />
       <header className="ws-header">
         <div>
           <p className="ws-eyebrow">คลังประกาศนียบัตร</p>
@@ -161,7 +191,7 @@ export default function NewCertificatePage() {
       </header>
 
       <div className="ws-body">
-        <form className="form-card" onSubmit={handleSubmit} data-entrance-form>
+        <form className="form-card" onSubmit={handleSubmit}>
           {error && <p className="form-error">{error}</p>}
           {duplicates.length > 0 && (
             <p className="form-warning">
@@ -244,11 +274,14 @@ export default function NewCertificatePage() {
 
               <div className="form-field">
                 <label>ไฟล์ (รูปภาพหรือเอกสาร)</label>
-                <div className="file-drop">
+                <div
+                  className={`file-drop${dragOver ? " drag-over" : ""}`}
+                  {...dh}
+                >
                   <input
                     type="file"
                     accept="image/*,.pdf,.doc,.docx"
-                    onChange={handleFile}
+                    onChange={handleFileInput}
                   />
                   {file ? (
                     <p className="file-preview-selected">
@@ -257,7 +290,9 @@ export default function NewCertificatePage() {
                       </span>
                       <span className="file-preview-text">
                         <strong>{file.name}</strong><br />
-                        <small>{formatFileSize(file.size)}</small>
+                        <small>
+                          {compressing ? "กำลังบีบอัด..." : compression ? compressionLabel(compression) : formatFileSize(file.size)}
+                        </small>
                       </span>
                     </p>
                   ) : (

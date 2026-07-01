@@ -1,31 +1,129 @@
-import { useEffect } from "react";
-import gsap from "gsap";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { CustomEase } from "gsap/CustomEase";
 
-function navDir(): number {
-  const d = sessionStorage.getItem("nav-dir");
-  sessionStorage.removeItem("nav-dir");
-  return d === "up" ? -1 : 1;
+gsap.registerPlugin(ScrollTrigger, CustomEase);
+
+export const easePremium = CustomEase.create(
+  "easePremium",
+  "0.16, 1, 0.3, 1",
+);
+
+export const easeOut = CustomEase.create("easeOut", "0.22, 1, 0.36, 1");
+
+export const durations = {
+  fast: 0.2,
+  base: 0.35,
+  slow: 0.5,
+  reveal: 0.6,
+  pageEnter: 0.5,
+  pageExit: 0.3,
+} as const;
+
+export const staggerDelay = 0.08;
+
+export interface EntrancePreset {
+  fromVars: gsap.TweenVars;
+  toVars: gsap.TweenVars;
 }
 
-export function useEntranceAnimation(ref: React.RefObject<HTMLElement | null>, deps: unknown[] = []) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const dir = navDir();
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from("[data-entrance]", { y: 24 * dir, autoAlpha: 0, duration: 0.25, stagger: 0.04, ease: "power2.out" });
-      gsap.from("[data-entrance-hero]", { y: 32 * dir, autoAlpha: 0, duration: 0.3, ease: "power2.out" });
-      gsap.from("[data-entrance-panel]", { y: 20 * dir, autoAlpha: 0, duration: 0.25, stagger: 0.06, ease: "power2.out" });
-      gsap.from("[data-entrance-scale]", { scale: 0.92, autoAlpha: 0, duration: 0.3, ease: "power2.out" });
-      gsap.from("[data-entrance-left]", { y: -12 * dir, autoAlpha: 0, duration: 0.25, ease: "power2.out" });
-      gsap.from("[data-entrance-filter]", { y: -12 * dir, autoAlpha: 0, duration: 0.25, ease: "power2.out" });
-      gsap.from("[data-entrance-detail] > *", { y: 12 * dir, autoAlpha: 0, duration: 0.2, stagger: 0.04, ease: "power2.out" });
-      gsap.from("[data-entrance-preview]", { scale: 0.95, autoAlpha: 0, duration: 0.3, ease: "power2.out" });
-      gsap.from("[data-entrance-form] > *", { y: 16 * dir, autoAlpha: 0, duration: 0.25, stagger: 0.05, ease: "power2.out" });
-      gsap.from("[data-entrance-sidebar]", { x: -280, autoAlpha: 0, duration: 0.3, ease: "power2.out" });
-    }, el);
-    return () => mm.revert();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+export const presets: Record<string, EntrancePreset> = {
+  "fade-up": {
+    fromVars: { opacity: 0, y: 40, ease: easePremium },
+    toVars: { opacity: 1, y: 0, ease: easePremium },
+  },
+  "fade-in": {
+    fromVars: { opacity: 0, ease: easePremium },
+    toVars: { opacity: 1, ease: easePremium },
+  },
+  "scale-in": {
+    fromVars: { opacity: 0, scale: 0.95, ease: easePremium },
+    toVars: { opacity: 1, scale: 1, ease: easePremium },
+  },
+  "slide-left": {
+    fromVars: { opacity: 0, x: 40, ease: easePremium },
+    toVars: { opacity: 1, x: 0, ease: easePremium },
+  },
+  "slide-right": {
+    fromVars: { opacity: 0, x: -40, ease: easePremium },
+    toVars: { opacity: 1, x: 0, ease: easePremium },
+  },
+};
+
+export function isReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function animateEntrance(
+  element: Element,
+  presetName: string,
+  delay: number = 0,
+): gsap.core.Tween | null {
+  const preset = presets[presetName] || presets["fade-up"];
+  if (isReducedMotion()) {
+    gsap.set(element, { opacity: 1, y: 0, scale: 1, x: 0 });
+    return null;
+  }
+  return gsap.fromTo(
+    element,
+    { ...preset.fromVars },
+    { ...preset.toVars, delay, duration: durations.reveal },
+  );
+}
+
+export function createPageEntranceTimeline(
+  container: Element,
+  selector: string = "[data-animate]",
+): gsap.core.Timeline | null {
+  if (isReducedMotion()) return null;
+  const elements = container.querySelectorAll(selector);
+  if (!elements.length) return null;
+
+  const tl = gsap.timeline({ defaults: { ease: easePremium } });
+
+  elements.forEach((el) => {
+    const presetName = el.getAttribute("data-animate") || "fade-up";
+    const preset = presets[presetName] || presets["fade-up"];
+    const delay = parseFloat(el.getAttribute("data-delay") || "0");
+    const duration = parseFloat(el.getAttribute("data-duration") || `${durations.reveal}`);
+
+    tl.fromTo(
+      el,
+      { ...preset.fromVars },
+      { ...preset.toVars, delay, duration },
+      "<",
+    );
+  });
+
+  return tl;
+}
+
+export function createStaggerEntrance(
+  container: Element,
+  selector: string = "[data-animate-stagger]",
+  stagger: number = staggerDelay,
+): gsap.core.Timeline | null {
+  if (isReducedMotion()) return null;
+  const elements = container.querySelectorAll(selector);
+  if (!elements.length) return null;
+
+  const tl = gsap.timeline({ defaults: { ease: easePremium } });
+  const defaultPresetName = container
+    .querySelector("[data-animate-stagger]")
+    ?.getAttribute("data-animate-stagger");
+
+  const items = Array.from(elements);
+  items.forEach((el, i) => {
+    const presetName = el.getAttribute("data-animate") || defaultPresetName || "fade-up";
+    const preset = presets[presetName] || presets["fade-up"];
+    tl.fromTo(
+      el,
+      { ...preset.fromVars },
+      { ...preset.toVars, duration: durations.reveal },
+      i * stagger,
+    );
+  });
+
+  return tl;
 }

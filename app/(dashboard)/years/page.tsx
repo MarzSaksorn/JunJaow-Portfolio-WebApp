@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+
 import { fileIcon, iconClass } from "@/lib/file-icons";
 import { FolderOpen, ArrowRight } from "@phosphor-icons/react";
 
@@ -20,7 +21,7 @@ type YearPreview = {
 };
 
 export default function YearsPage() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const [yearData, setYearData] = useState<Record<string, YearPreview>>({});
   const [loading, setLoading] = useState(true);
 
@@ -57,15 +58,13 @@ export default function YearsPage() {
     return () => { cancelled = true; };
   }, []);
 
-  useEntranceAnimation(rootRef);
-
   function isImageUrl(url: string, type: string) {
     return type.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i.test(url);
   }
 
   return (
     <div ref={rootRef}>
-      <header className="ws-header">
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">ปีการศึกษา</p>
           <h1>คลังปีการศึกษาไทย</h1>
@@ -73,7 +72,7 @@ export default function YearsPage() {
       </header>
 
       <div className="ws-body">
-        <div className="ya-grid" data-entrance>
+        <div className="ya-grid" data-animate="fade-up" data-order="2">
           {loading ? (
             years.map((year) => (
               <div key={year} className="ya-skeleton">
@@ -101,6 +100,7 @@ export default function YearsPage() {
                 key={year}
                 href={`/certificates?year=${year}`}
                 className={`ya-card ${accent}`}
+                data-animate-stagger
               >
                 <div className={`ya-head ${accent}`}>
                   <strong>{year}</strong>

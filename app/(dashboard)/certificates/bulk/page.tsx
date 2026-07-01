@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+
 import { logActivity } from "@/lib/activity";
 import { fileIcon, iconClass, formatFileSize } from "@/lib/file-icons";
+import { compressImage, compressionLabel } from "@/lib/image-compression";
+import type { CompressionResult } from "@/lib/image-compression";
+import { createDropHandlers } from "@/lib/drag-drop";
+import DropOverlay from "@/app/components/drop-overlay";
 import { TagInput } from "@/app/components/tag-input";
 import { IssuerInput } from "@/app/components/issuer-input";
 import { CheckCircle, Spinner, XCircle } from "@phosphor-icons/react";
@@ -34,15 +38,29 @@ export default function BulkUploadPage() {
   const rootRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [entries, setEntries] = useState<FileEntry[]>([]);
+  const [compressMap, setCompressMap] = useState<Record<number, CompressionResult>>({});
+  const [compressingIds, setCompressingIds] = useState<Set<number>>(new Set());
+  const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [duplicatesMap, setDuplicatesMap] = useState<Record<number, { id: string; title: string }[]>>({});
   const doneCount = entries.filter((e) => e.status === "done").length;
   const allDone = entries.length > 0 && doneCount === entries.length;
 
-  function addFiles(files: FileList | null) {
-    if (!files) return;
-    const newEntries: FileEntry[] = Array.from(files).map((f, i) => ({
+  const dh = (() => {
+    const h = createDropHandlers((files) => { addFiles(files); });
+    return {
+      onDragOver: h.onDragOver,
+      onDragEnter: (e: React.DragEvent) => { h.onDragEnter(); setDragOver(true); },
+      onDragLeave: () => { setDragOver(false); },
+      onDrop: (e: React.DragEvent) => { setDragOver(false); h.onDrop(e); },
+    };
+  })();
+
+  function addFiles(files: FileList | File[] | null) {
+    if (!files || files.length === 0) return;
+    const fileArr = Array.from(files);
+    const newEntries: FileEntry[] = fileArr.map((f, i) => ({
       id: Date.now() + i,
       file: f,
       title: f.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
@@ -53,6 +71,20 @@ export default function BulkUploadPage() {
       status: "pending" as const,
     }));
     setEntries((prev) => [...prev, ...newEntries]);
+
+    // Compress images in the background
+    for (const entry of newEntries) {
+      if (!entry.file.type.startsWith("image/")) continue;
+      setCompressingIds((prev) => new Set(prev).add(entry.id));
+      compressImage(entry.file).then((result) => {
+        setCompressMap((prev) => ({ ...prev, [entry.id]: result }));
+        setCompressingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(entry.id);
+          return next;
+        });
+      });
+    }
   }
 
   function updateEntry(id: number, field: keyof Pick<FileEntry, "title" | "issuer" | "academic_year" | "category" | "tags">, value: string) {
@@ -105,11 +137,12 @@ export default function BulkUploadPage() {
       if (entry.status === "done") continue;
       setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: "uploading" } : e)));
 
-      const file = entry.file;
-      const storagePath = `${user.id}/${Date.now()}_${file.name}`;
+      const compressedResult = compressMap[entry.id];
+      const uploadFile = compressedResult?.file || entry.file;
+      const storagePath = `${user.id}/${Date.now()}_${uploadFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from("certificate-files")
-        .upload(storagePath, file);
+        .upload(storagePath, uploadFile);
 
       if (uploadError) {
         setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: "error", error: uploadError.message } : e)));
@@ -128,9 +161,9 @@ export default function BulkUploadPage() {
         tags,
         file_url: urlData.publicUrl,
         file_path: storagePath,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
+        file_name: uploadFile.name,
+        file_type: uploadFile.type,
+        file_size: uploadFile.size,
       });
 
       if (insertError) {
@@ -144,10 +177,9 @@ export default function BulkUploadPage() {
     setSubmitting(false);
   }
 
-  useEntranceAnimation(rootRef);
-
   return (
     <div ref={rootRef}>
+      <DropOverlay onDrop={(files) => { addFiles(files); }} />
       <header className="ws-header">
         <div>
           <p className="ws-eyebrow">คลังประกาศนียบัตร</p>
@@ -159,10 +191,10 @@ export default function BulkUploadPage() {
       </header>
 
       <div className="ws-body">
-        <div className="form-card" data-entrance-form>
+        <div className="form-card">
           {error && <p className="form-error">{error}</p>}
 
-          <div className="bulk-dropzone" onClick={() => fileInputRef.current?.click()}>
+          <div className={`bulk-dropzone${dragOver ? " drag-over" : ""}`} {...dh} onClick={() => fileInputRef.current?.click()}>
             <input
               ref={fileInputRef}
               type="file"
@@ -188,11 +220,17 @@ export default function BulkUploadPage() {
                     </span>
                     <div className="bulk-meta">
                       <strong>{entry.file.name}</strong>
-                      <small>{formatFileSize(entry.file.size)}</small>
+                      <small>
+                        {compressingIds.has(entry.id)
+                          ? "กำลังบีบอัด..."
+                          : compressMap[entry.id]
+                            ? compressionLabel(compressMap[entry.id])
+                            : formatFileSize(entry.file.size)}
+                      </small>
                     </div>
                     <div className="bulk-status">
                       {entry.status === "uploading" && <Spinner weight="duotone" className="spin" />}
-                      {entry.status === "done" && <CheckCircle weight="duotone" color="var(--mint)" />}
+                      {entry.status === "done" && <CheckCircle weight="duotone" color="var(--tab-mint)" />}
                       {entry.status === "error" && <XCircle weight="duotone" color="#e74c3c" />}
                     </div>
                     {entry.status === "pending" && (

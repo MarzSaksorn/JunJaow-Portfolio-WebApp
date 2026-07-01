@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+
 import { logActivity } from "@/lib/activity";
 import { MagnifyingGlass, CheckSquare, SquaresFour, Trash, PencilLine, CalendarBlank, Tag, X, Check, CaretDown, DownloadSimple } from "@phosphor-icons/react";
+import { ConfirmDialog } from "@/app/components/confirm-dialog";
 import { fileIcon, iconClass } from "@/lib/file-icons";
 import { TagInput } from "@/app/components/tag-input";
 import JSZip from "jszip";
@@ -35,12 +38,17 @@ function TileContentWrapper({ href, batchMode, className, children }: { href: st
 }
 
 export function CertificateList() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
+  const scrollRef = useScrollReveal<HTMLDivElement>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const PAGE_SIZE = 24;
   const [batchMode, setBatchMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchAction, setBatchAction] = useState<"delete" | "year" | "tags" | null>(null);
@@ -56,37 +64,77 @@ export function CertificateList() {
 
   const years = ["2569", "2570", "2571", "2572"];
 
+  function applyFilters(q: any) {
+    if (searchQuery) q = q.or(`title.ilike.%${searchQuery}%,issuer.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+    if (selectedYear) q = q.eq("academic_year", selectedYear);
+    if (selectedCategory) q = q.eq("category", selectedCategory);
+    if (dateFrom) q = q.gte("issued_at", dateFrom);
+    if (dateTo) q = q.lte("issued_at", dateTo);
+    if (fileType === "image") q = q.ilike("file_type", "image/%");
+    else if (fileType === "pdf") q = q.ilike("file_type", "%pdf%");
+    else if (fileType === "doc") q = q.or("file_type.ilike.%doc%,file_type.ilike.%word%,file_type.ilike.%document%");
+    return q;
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
+    setCertificates([]);
+    setPage(1);
+    setHasMore(false);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    let dbQuery = supabase
+    let q = supabase
       .from("certificates")
-      .select("*")
+      .select("*", { count: "exact", head: false })
       .eq("owner_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(0, PAGE_SIZE - 1);
+    q = applyFilters(q);
 
-    if (searchQuery) {
-      dbQuery = dbQuery.or(
-        `title.ilike.%${searchQuery}%,issuer.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
-      );
-    }
-    if (selectedYear) dbQuery = dbQuery.eq("academic_year", selectedYear);
-    if (selectedCategory) dbQuery = dbQuery.eq("category", selectedCategory);
-    if (dateFrom) dbQuery = dbQuery.gte("issued_at", dateFrom);
-    if (dateTo) dbQuery = dbQuery.lte("issued_at", dateTo);
-    if (fileType === "image") dbQuery = dbQuery.ilike("file_type", "image/%");
-    else if (fileType === "pdf") dbQuery = dbQuery.ilike("file_type", "%pdf%");
-    else if (fileType === "doc") dbQuery = dbQuery.or("file_type.ilike.%doc%,file_type.ilike.%word%,file_type.ilike.%document%");
-
-    const { data } = await dbQuery;
+    const { data, count } = await q;
     setCertificates(data || []);
+    setHasMore(count !== null && count > PAGE_SIZE);
     setLoading(false);
   }, [selectedYear, selectedCategory, searchQuery, dateFrom, dateTo, fileType]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoadingMore(false); return; }
+
+    const nextPage = page + 1;
+    const from = nextPage * PAGE_SIZE - PAGE_SIZE;
+    const to = nextPage * PAGE_SIZE - 1;
+
+    const q = supabase
+      .from("certificates")
+      .select("*", { count: "exact", head: false })
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (searchQuery) q.or(`title.ilike.%${searchQuery}%,issuer.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+    if (selectedYear) q.eq("academic_year", selectedYear);
+    if (selectedCategory) q.eq("category", selectedCategory);
+    if (dateFrom) q.gte("issued_at", dateFrom);
+    if (dateTo) q.lte("issued_at", dateTo);
+    if (fileType === "image") q.ilike("file_type", "image/%");
+    else if (fileType === "pdf") q.ilike("file_type", "%pdf%");
+    else if (fileType === "doc") q.or("file_type.ilike.%doc%,file_type.ilike.%word%,file_type.ilike.%document%");
+
+    const { data } = await q;
+    if (data) {
+      setCertificates((prev) => [...prev, ...data]);
+      setPage(nextPage);
+      setHasMore(data.length === PAGE_SIZE);
+    }
+    setLoadingMore(false);
+  }
 
   const categories = [
     "วิชาการ", "กีฬา", "ศิลปะ", "ภาวะผู้นำ",
@@ -202,8 +250,6 @@ export function CertificateList() {
     load();
   }
 
-  useEntranceAnimation(rootRef);
-
   const hasFilters = selectedYear || selectedCategory || searchQuery || dateFrom || dateTo || fileType;
   const isFiltered = hasFilters && !loading;
   const isEmpty = certificates.length === 0 && !loading;
@@ -211,7 +257,7 @@ export function CertificateList() {
 
   return (
     <div className="archive-layout" ref={rootRef}>
-      <aside className="filter-sidebar" data-entrance-filter>
+      <aside className="filter-sidebar" data-animate="slide-right" data-order="1">
         <div className="filter-section">
           <h4>ปีการศึกษา</h4>
           {years.map((y) => (
@@ -286,7 +332,7 @@ export function CertificateList() {
       </aside>
 
       <div className="certificates-content">
-        <div className="cert-toolbar">
+        <div className="cert-toolbar" data-animate="slide-left" data-order="2">
           <form className="search-field" onSubmit={handleSearch}>
             <MagnifyingGlass weight="duotone" style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
             <input
@@ -322,7 +368,7 @@ export function CertificateList() {
           <p className="result-count">
             {certificates.length === 0
               ? hasFilters ? "ไม่พบประกาศนียบัตรที่ตรงกับตัวกรอง" : "ยังไม่มีประกาศนียบัตร"
-              : `${certificates.length} ประกาศนียบัตร`
+              : `แสดง ${certificates.length}${hasMore ? "+" : ""} รายการ`
             }
             {batchMode && selectedIds.size > 0 && ` — เลือก ${selectedIds.size} รายการ`}
           </p>
@@ -391,7 +437,7 @@ export function CertificateList() {
             </div>
           )
         ) : (
-          <div className="cert-tiles">
+          <div className="cert-tiles" data-animate="fade-up" data-order="3">
             {certificates.map((cert, i) => {
               const isImage = cert.file_type?.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i.test(cert.file_url || "");
               return (
@@ -399,6 +445,7 @@ export function CertificateList() {
                   key={cert.id}
                   className={`cert-tile${batchMode ? " has-checkbox" : ""}${selectedIds.has(cert.id) ? " selected" : ""}`}
                   style={{ "--i": i } as React.CSSProperties}
+                  data-animate-stagger
                   onClick={batchMode ? () => toggleSelect(cert.id) : undefined}
                   role={batchMode ? "button" : undefined}
                   tabIndex={batchMode ? 0 : undefined}
@@ -463,73 +510,63 @@ export function CertificateList() {
             })}
           </div>
         )}
+
+        {hasMore && !loading && (
+          <div className="load-more-wrap">
+            <button
+              className="btn btn-secondary"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? "กำลังโหลด..." : "โหลดเพิ่ม"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {batchAction === "delete" && (
-        <div className="modal-overlay" onClick={() => setBatchAction(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <header className="modal-header">
-              <h3>ลบ {selectedIds.size} รายการ?</h3>
-              <button className="modal-close" onClick={() => setBatchAction(null)}><X weight="duotone" /></button>
-            </header>
-            <p style={{ padding: "12px 24px", fontSize: 14, color: "var(--ink-muted)" }}>
-              ไฟล์ที่แนบจะถูกลบออกด้วย การกระทำนี้ไม่สามารถย้อนกลับได้
-            </p>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setBatchAction(null)}>ยกเลิก</button>
-              <button className="btn btn-danger" onClick={executeBatchDelete}>
-                <Trash weight="duotone" /> ลบทั้งหมด
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={batchAction === "delete"}
+        title={`ลบ ${selectedIds.size} รายการ?`}
+        message="ไฟล์ที่แนบจะถูกลบออกด้วย การกระทำนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบทั้งหมด"
+        cancelLabel="ยกเลิก"
+        danger
+        confirmIcon={<Trash weight="duotone" />}
+        onConfirm={executeBatchDelete}
+        onCancel={() => setBatchAction(null)}
+      />
 
-      {batchAction === "year" && (
-        <div className="modal-overlay" onClick={() => setBatchAction(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <header className="modal-header">
-              <h3>เปลี่ยนปีการศึกษา {selectedIds.size} รายการ</h3>
-              <button className="modal-close" onClick={() => setBatchAction(null)}><X weight="duotone" /></button>
-            </header>
-            <div style={{ padding: "16px 24px" }}>
-              <select value={batchYear} onChange={(e) => setBatchYear(e.target.value)} style={{ width: "100%" }}>
-                <option value="">เลือกปี</option>
-                {years.map((y) => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setBatchAction(null)}>ยกเลิก</button>
-              <button className="btn btn-primary" disabled={!batchYear} onClick={executeBatchYear}>
-                <Check weight="duotone" /> ยืนยัน
-              </button>
-            </div>
-          </div>
+      <ConfirmDialog
+        open={batchAction === "year"}
+        title={`เปลี่ยนปีการศึกษา ${selectedIds.size} รายการ`}
+        confirmLabel="ยืนยัน"
+        confirmDisabled={!batchYear}
+        confirmIcon={<Check weight="duotone" />}
+        onConfirm={executeBatchYear}
+        onCancel={() => setBatchAction(null)}
+      >
+        <div style={{ padding: "16px 24px" }}>
+          <select value={batchYear} onChange={(e) => setBatchYear(e.target.value)} style={{ width: "100%" }}>
+            <option value="">เลือกปี</option>
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
         </div>
-      )}
+      </ConfirmDialog>
 
-      {batchAction === "tags" && (
-        <div className="modal-overlay" onClick={() => setBatchAction(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <header className="modal-header">
-              <h3>เพิ่มแท็กให้ {selectedIds.size} รายการ</h3>
-              <button className="modal-close" onClick={() => setBatchAction(null)}><X weight="duotone" /></button>
-            </header>
-            <div style={{ padding: "16px 24px" }}>
-              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 8 }}>
-                แท็กใหม่จะถูกเพิ่มเข้าไปในแท็กที่มีอยู่แล้วของแต่ละรายการ
-              </p>
-              <TagInput value={batchTags} onChange={setBatchTags} placeholder="พิมพ์แท็กเพื่อเพิ่ม..." />
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setBatchAction(null)}>ยกเลิก</button>
-              <button className="btn btn-primary" disabled={!batchTags.trim()} onClick={executeBatchTags}>
-                <Check weight="duotone" /> เพิ่มแท็ก
-              </button>
-            </div>
-          </div>
+      <ConfirmDialog
+        open={batchAction === "tags"}
+        title={`เพิ่มแท็กให้ ${selectedIds.size} รายการ`}
+        confirmLabel="เพิ่มแท็ก"
+        confirmDisabled={!batchTags.trim()}
+        confirmIcon={<Check weight="duotone" />}
+        onConfirm={executeBatchTags}
+        onCancel={() => setBatchAction(null)}
+      >
+        <div style={{ padding: "16px 24px" }}>
+          <p className="ink-muted fz-13 mb-8">แท็กใหม่จะถูกเพิ่มเข้าไปในแท็กที่มีอยู่แล้วของแต่ละรายการ</p>
+          <TagInput value={batchTags} onChange={setBatchTags} placeholder="พิมพ์แท็กเพื่อเพิ่ม..." />
         </div>
-      )}
+      </ConfirmDialog>
     </div>
   );
 }

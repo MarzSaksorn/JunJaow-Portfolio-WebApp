@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
-import gsap from "gsap";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+
 import { fileIcon, iconClass } from "@/lib/file-icons";
 import type { Database } from "@/lib/supabase/types";
 
@@ -23,8 +24,8 @@ const monthNamesTH = [
 ];
 
 export default function TimelinePage() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const feedRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
+  const scrollRef = useScrollReveal<HTMLDivElement>();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,27 +52,6 @@ export default function TimelinePage() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    const el = feedRef.current;
-    if (!el || certificates.length === 0) return;
-    const items = el.querySelectorAll<HTMLElement>(".tm-entry");
-    if (!items.length) return;
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(items, {
-        y: 16,
-        autoAlpha: 0,
-        duration: 0.4,
-        stagger: 0.05,
-        ease: "power3.out",
-        clearProps: "transform",
-      });
-    }, el);
-    return () => mm.revert();
-  }, [certificates.length]);
-
-  useEntranceAnimation(rootRef);
-
   const grouped: Record<string, Certificate[]> = {};
   for (const cert of certificates) {
     if (!cert.issued_at) continue;
@@ -85,7 +65,7 @@ export default function TimelinePage() {
 
   return (
     <div ref={rootRef}>
-      <header className="ws-header">
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">เส้นเวลา</p>
           <h1>ลำดับความสำเร็จ</h1>
@@ -128,7 +108,7 @@ export default function TimelinePage() {
             </Link>
           </div>
         ) : (
-          <div className="tm-feed" ref={feedRef}>
+          <div className="tm-feed" ref={scrollRef}>
             {sortedKeys.map((key) => {
               const [year, month] = key.split("-");
               const monthYear =
@@ -137,7 +117,7 @@ export default function TimelinePage() {
                 (parseInt(year) + 543);
 
               return (
-                <div key={key} className="tm-month">
+                <div key={key} className="tm-month" data-scroll="fade-up">
                   <div className="tm-divider">
                     <span>{monthYear}</span>
                     <span className="tm-divider-count">{grouped[key].length} รายการ</span>
@@ -165,6 +145,7 @@ export default function TimelinePage() {
                         key={cert.id}
                         href={`/certificates/${cert.id}`}
                         className={`tm-entry ${accentClass}`}
+                        data-animate-stagger
                       >
                         <div className="tm-entry-accent" />
                         <div className="tm-entry-thumb">

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEntranceAnimation } from "@/lib/animations";
+
 import { useRef } from "react";
 
 export default function EditLoading() {
   const rootRef = useRef<HTMLDivElement>(null);
-  useEntranceAnimation(rootRef);
 
   return (
     <div ref={rootRef}>
@@ -16,7 +15,7 @@ export default function EditLoading() {
         </div>
       </header>
 
-      <div className="ws-body" data-entrance-form style={{ marginTop: 24 }}>
+      <div className="ws-body" style={{ marginTop: 24 }}>
         <div className="form-card" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

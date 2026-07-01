@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { ArrowLeft, FilePdf, ShareNetwork } from "@phosphor-icons/react";
 import { useState } from "react";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import { FadeIn } from "@/app/components/fade-in";
 import { ConfirmDialog } from "@/app/components/confirm-dialog";
 import {
   ModernTemplate,
@@ -61,6 +64,8 @@ function TemplateSwitch({ template, snapshot, title }: { template: string; snaps
 }
 
 export function PortfolioView({ page }: { page: PageData }) {
+  const rootRef = usePageEntrance<HTMLDivElement>();
+  const scrollRef = useScrollReveal<HTMLDivElement>();
   const snap = page.content_snapshot;
   const certs = snap?.certificates || [];
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -99,8 +104,8 @@ export function PortfolioView({ page }: { page: PageData }) {
   const preset = template === "classic" ? "warm" : template === "timeline" ? "slate" : "";
 
   return (
-    <main className="public-portfolio" id="main-content" data-color-preset={preset || undefined}>
-      <header className="public-portfolio-head">
+    <main className="public-portfolio" id="main-content" data-color-preset={preset || undefined} ref={rootRef}>
+      <header className="public-portfolio-head" data-animate="fade-up" data-order="1">
         <div className="public-portfolio-head-inner">
           <div className="public-portfolio-brand">
             <button
@@ -129,7 +134,7 @@ export function PortfolioView({ page }: { page: PageData }) {
         </div>
       </header>
 
-      <section className="portfolio-title-hero">
+      <section className="portfolio-title-hero" data-animate="fade-up" data-order="2">
         <div className="portfolio-title-hero-inner">
           <h1 className="portfolio-cinematic-title">{page.title}</h1>
           <div className="portfolio-title-bar" />
@@ -142,7 +147,7 @@ export function PortfolioView({ page }: { page: PageData }) {
         title={page.title}
       />
 
-      <footer className="public-portfolio-foot">
+      <footer className="public-portfolio-foot" data-scroll="fade-up">
         <div className="portfolio-foot-stats">
           <span className="dot-tag tag-mint">{certs.length} รายการ</span>
         </div>

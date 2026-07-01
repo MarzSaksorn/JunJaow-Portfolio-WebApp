@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { ThemeToggle } from "./theme-toggle";
-import { useEntranceAnimation } from "@/lib/animations";
+
 import {
   House,
   Certificate,
@@ -41,8 +41,6 @@ export function Sidebar() {
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", String(collapsed));
   }, [collapsed]);
-
-  useEntranceAnimation(sidebarRef);
 
   useEffect(() => {
     const supabase = createClient();
@@ -83,7 +81,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className={`binder${collapsed ? " binder--collapsed" : ""}`} ref={sidebarRef} data-entrance-sidebar>
+    <aside className={`binder${collapsed ? " binder--collapsed" : ""}`} ref={sidebarRef}>
       <div className="binder-head">
         <Link href="/" className="binder-mark" aria-label="หน้าแรก">Jj</Link>
         <span className="binder-name">JunJaow</span>

@@ -1,15 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useEntranceAnimation } from "@/lib/animations";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+
 import { presets, applyPreset, getSavedPreset } from "@/lib/color-themes";
 import { createClient } from "@/lib/supabase/browser";
 import { CheckCircle, DownloadSimple, UploadSimple } from "@phosphor-icons/react";
 
 export default function SettingsPage() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
   const importRef = useRef<HTMLInputElement>(null);
-  useEntranceAnimation(rootRef);
   const [active, setActive] = useState(getSavedPreset);
   const [backupMsg, setBackupMsg] = useState("");
   const [importing, setImporting] = useState(false);
@@ -96,7 +96,7 @@ export default function SettingsPage() {
 
   return (
     <div ref={rootRef}>
-      <header className="ws-header">
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">ตั้งค่า</p>
           <h1>ธีมสี</h1>
@@ -104,7 +104,7 @@ export default function SettingsPage() {
       </header>
 
       <div className="ws-body">
-        <div className="form-card" data-entrance-form>
+        <div className="form-card" data-animate="fade-up" data-order="2">
           <p style={{ color: "var(--ink-muted)", fontSize: 14, marginBottom: 20 }}>
             เลือกชุดสีสำหรับทั้งระบบ
           </p>
@@ -115,6 +115,7 @@ export default function SettingsPage() {
                 key={p.id}
                 className={`theme-card${active === p.id ? " active" : ""}`}
                 onClick={() => handleSelect(p.id)}
+                data-animate-stagger
               >
                 <div className="theme-swatch" style={{ background: p.accent }} />
                 <div className="theme-body">
@@ -132,7 +133,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="form-card" data-entrance-form style={{ marginTop: 24 }}>
+        <div className="form-card" style={{ marginTop: 24 }} data-animate="fade-up" data-order="3">
           <p className="ws-eyebrow">การจัดการข้อมูล</p>
           <h3 style={{ margin: "4px 0 16px" }}>สำรองและกู้คืนข้อมูล</h3>
 

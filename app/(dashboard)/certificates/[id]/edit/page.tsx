@@ -3,7 +3,7 @@
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
+
 import { logActivity } from "@/lib/activity";
 import { fileIcon, iconClass, formatFileSize } from "@/lib/file-icons";
 import { TagInput } from "@/app/components/tag-input";
@@ -170,8 +170,6 @@ export default function EditCertificatePage() {
     router.push(`/certificates/${id}`);
   }
 
-  useEntranceAnimation(rootRef);
-
   if (loading) {
     return (
       <div ref={rootRef}>
@@ -232,7 +230,7 @@ export default function EditCertificatePage() {
       </header>
 
       <div className="ws-body">
-        <form className="form-card" onSubmit={handleSubmit} data-entrance-form>
+        <form className="form-card" onSubmit={handleSubmit}>
           {error && <p className="form-error">{error}</p>}
           {duplicates.length > 0 && (
             <p className="form-warning">

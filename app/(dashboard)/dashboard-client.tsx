@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { useEntranceAnimation } from "@/lib/animations";
-import gsap from "gsap";
+import { usePageEntrance } from "@/hooks/use-page-entrance";
+import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+
 import {
   Certificate,
   FolderOpen,
@@ -42,7 +43,8 @@ const dotTagColor = (cat: string | null) => {
 };
 
 export function DashboardClient() {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = usePageEntrance<HTMLDivElement>();
+  const scrollRef = useScrollReveal<HTMLDivElement>();
   const [data, setData] = useState({
     totalCertificates: 0,
     recentCount: 0,
@@ -101,51 +103,11 @@ export function DashboardClient() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const blocks = el.querySelectorAll<HTMLElement>(".ds-year");
-    if (!blocks.length) return;
-    const dir = sessionStorage.getItem("nav-dir") === "up" ? -1 : 1;
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.fromTo(blocks,
-        {
-          y: 40 * dir,
-          autoAlpha: 0,
-        },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 0.4,
-          stagger: 0.06,
-          ease: "power2.out",
-        },
-      );
-    }, el);
-    return () => mm.revert();
-  }, []);
-
-  useEntranceAnimation(rootRef);
-
   const { totalCertificates, recentCount, yearCounts, portfolioCount, recentCerts, profileCompletion } = data;
-
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el || recentCerts.length === 0) return;
-    const cards = el.querySelectorAll<HTMLElement>(".cert-card");
-    if (!cards.length) return;
-    const dir = sessionStorage.getItem("nav-dir") === "up" ? -1 : 1;
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(cards, { y: 20 * dir, autoAlpha: 0, duration: 0.3, stagger: 0.06, ease: "power2.out", clearProps: "transform" });
-    }, el);
-    return () => mm.revert();
-  }, [recentCerts.length]);
 
   return (
     <div ref={rootRef}>
-      <header className="ws-header">
+      <header className="ws-header" data-animate="fade-up" data-order="1">
         <div>
           <p className="ws-eyebrow">จัดการพอร์ตโฟลิโออย่างรวดเร็ว</p>
           <h1>ห้องรับรอง<br />ผลงานของคุณ</h1>
@@ -157,27 +119,27 @@ export function DashboardClient() {
       </header>
 
       <div className="ws-body">
-        <div className="ds-stats">
-          <div className="ds-stat ds-stat-clip">
+        <div className="ds-stats" data-animate="fade-up" data-order="2">
+          <div className="ds-stat ds-stat-clip" data-animate-stagger>
             <div className="ds-stat-body">
               <strong>{totalCertificates}</strong>
               <span>ทั้งหมด</span>
               <small>+{recentCount} เดือนนี้</small>
             </div>
           </div>
-          <div className="ds-stat ds-stat-pink">
+          <div className="ds-stat ds-stat-pink" data-animate-stagger>
             <div className="ds-stat-body">
               <strong>{portfolioCount}</strong>
               <span>พอร์ตโฟลิโอ</span>
             </div>
           </div>
-          <div className="ds-stat ds-stat-mint">
+          <div className="ds-stat ds-stat-mint" data-animate-stagger>
             <div className="ds-stat-body">
               <strong>{Object.keys(yearCounts).length}</strong>
               <span>ปีการศึกษา</span>
             </div>
           </div>
-          <div className="ds-stat ds-stat-lavender">
+          <div className="ds-stat ds-stat-lavender" data-animate-stagger>
             <div className="ds-stat-body">
               <strong>{profileCompletion}%</strong>
               <span>โปรไฟล์พร้อม</span>
@@ -185,7 +147,7 @@ export function DashboardClient() {
           </div>
         </div>
 
-        <div className="ds-years">
+        <div className="ds-years" data-animate="fade-up" data-order="3">
           {years.map((year) => {
             const count = yearCounts[year] || 0;
             const maxCount = Math.max(...Object.values(yearCounts), 1);
@@ -204,7 +166,7 @@ export function DashboardClient() {
           })}
         </div>
 
-        <div className="ds-main">
+        <div className="ds-main" data-animate="fade-up" data-order="4">
           <section className="ds-sheet">
             <div className="ds-sheet-head">
               <h2>ประกาศนียบัตรล่าสุด</h2>
@@ -212,7 +174,7 @@ export function DashboardClient() {
             </div>
             <div className="ds-sheet-body">
               {recentCerts.length === 0 ? (
-                <div className="empty-state" style={{ padding: "24px 16px" }}>
+                <div className="empty-state p-24-16">
                   <p>ยังไม่มีประกาศนียบัตร</p>
                   <Link className="btn btn-primary" href="/certificates/new">อัปโหลดอันแรก</Link>
                 </div>
@@ -222,6 +184,7 @@ export function DashboardClient() {
                     key={cert.id}
                     href={`/certificates/${cert.id}`}
                     className="cert-card"
+                    data-animate-stagger
                   >
                     <div className={`cert-card-tab ${yearBorderClasses[cert.academic_year || ""] || "clip-border"}`} />
                     <div className="cert-card-body">
@@ -250,12 +213,12 @@ export function DashboardClient() {
               <h3 className="ds-feed-head">กิจกรรมล่าสุด</h3>
               <div className="ds-feed-list">
                 {loading ? (
-                  <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: "4px 0" }}>กำลังโหลด...</p>
+                  <p className="ink-muted py-4">กำลังโหลด...</p>
                 ) : activities.length === 0 ? (
-                  <p style={{ color: "var(--ink-muted)", fontSize: 14, padding: "4px 0" }}>ยังไม่มีกิจกรรม</p>
+                  <p className="ink-muted py-4">ยังไม่มีกิจกรรม</p>
                 ) : (
                   activities.slice(0, 5).map((a) => (
-                    <div key={a.id} className="ds-feed-item">
+                    <div key={a.id} className="ds-feed-item" data-animate-stagger>
                       <ClockCounterClockwise weight="duotone" size={13} />
                       <span>
                         {a.action === "cert_created" && "เพิ่ม"}
@@ -279,7 +242,7 @@ export function DashboardClient() {
             </div>
           </section>
 
-          <aside className="ds-flap">
+          <aside className="ds-flap" data-scroll="fade-up">
             <div className="ds-flap-profile">
               <div className="ds-flap-accent" />
               <p className="ws-eyebrow">ข้อมูลส่วนตัว</p>
@@ -308,7 +271,7 @@ export function DashboardClient() {
               </div>
             </div>
 
-            <div className="ds-flap-actions">
+            <div className="ds-flap-actions" data-scroll-stagger="0.08">
               <Link className="ds-flap-btn" href="/portfolio">
                 <FolderOpen weight="duotone" size={16} />
                 <span>สร้างพอร์ตโฟลิโอ</span>
