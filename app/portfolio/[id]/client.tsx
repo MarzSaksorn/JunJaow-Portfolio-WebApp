@@ -13,6 +13,8 @@ import {
   TimelineTemplate,
 } from "@/app/components/portfolio-templates";
 import type { TemplateType } from "@/app/components/portfolio-templates";
+import { mergeDesignSettings, heroGradient } from "@/lib/portfolio-design";
+import type { DesignSettings } from "@/lib/portfolio-design";
 
 type SnapshotCert = {
   title: string;
@@ -50,16 +52,18 @@ type PageData = {
   content_snapshot: Snapshot;
   owner_id: string;
   template?: string;
+  design_settings?: Partial<DesignSettings>;
 };
 
-function TemplateSwitch({ template, snapshot, title }: { template: string; snapshot: Snapshot; title: string }) {
+function TemplateSwitch({ template, snapshot, title, ds }: { template: string; snapshot: Snapshot; title: string; ds?: { cert_columns?: 2|3|4; section_order?: string[] } }) {
+  const props = { snapshot, title, designSettings: ds };
   switch (template) {
     case "classic":
-      return <ClassicTemplate snapshot={snapshot} title={title} />;
+      return <ClassicTemplate {...props} />;
     case "timeline":
-      return <TimelineTemplate snapshot={snapshot} title={title} />;
+      return <TimelineTemplate {...props} />;
     default:
-      return <ModernTemplate snapshot={snapshot} title={title} />;
+      return <ModernTemplate {...props} />;
   }
 }
 
@@ -70,6 +74,19 @@ export function PortfolioView({ page }: { page: PageData }) {
   const certs = snap?.certificates || [];
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showPdfError, setShowPdfError] = useState(false);
+
+  const ds = mergeDesignSettings(page.design_settings);
+  const dsTemplate = { cert_columns: ds.layout.cert_columns, section_order: ds.layout.section_order };
+  const preset = ds.preset;
+  const accent = ds.accent_color || (() => {
+    const map: Record<string, string> = { lavender: "#f87195", warm: "#c4842d", mint: "#2d9d7a", slate: "#3b82f6" };
+    return map[preset] || "#f87195";
+  })();
+  const heroBg = ds.hero.background_type === "gradient"
+    ? heroGradient(ds.preset, accent)
+    : ds.hero.background_type === "solid"
+    ? ds.hero.background_value
+    : undefined;
 
   function shareUrl(platform: "line" | "facebook") {
     const url = encodeURIComponent(window.location.href);
@@ -101,10 +118,26 @@ export function PortfolioView({ page }: { page: PageData }) {
   }
 
   const template = (snap as any)?.template || "modern";
-  const preset = template === "classic" ? "warm" : template === "timeline" ? "slate" : "";
+
+  const fontsFamilies = [ds.typography.heading_font, ds.typography.body_font]
+    .filter((f, i, a) => a.indexOf(f) === i)
+    .map((f) => f.replace(/ /g, "+"))
+    .join("&family=");
+  const fontsHref = `https://fonts.googleapis.com/css2?family=${fontsFamilies}:wght@300;400;500;600;700&display=swap`;
 
   return (
-    <main className="public-portfolio" id="main-content" data-color-preset={preset || undefined} ref={rootRef}>
+    <main className="public-portfolio" id="main-content" data-color-preset={preset} ref={rootRef}>
+      <link href={fontsHref} rel="stylesheet" />
+      <style>{`
+        .public-portfolio { --portfolio-accent: ${accent}; }
+        .public-portfolio .portfolio-title-hero h1,
+        .public-portfolio .tm-entry h4,
+        .public-portfolio .cert-card h4 { font-family: '${ds.typography.heading_font}', Mali, sans-serif; }
+        .public-portfolio, .public-portfolio p { font-family: '${ds.typography.body_font}', Mali, sans-serif; }
+        .public-portfolio .cert-grid { grid-template-columns: repeat(${ds.layout.cert_columns}, 1fr); }
+        ${heroBg ? `.public-portfolio .portfolio-title-hero { background: ${heroBg}; }` : ""}
+      `}</style>
+
       <header className="public-portfolio-head" data-animate="fade-up" data-order="1">
         <div className="public-portfolio-head-inner">
           <div className="public-portfolio-brand">
@@ -137,7 +170,8 @@ export function PortfolioView({ page }: { page: PageData }) {
       <section className="portfolio-title-hero" data-animate="fade-up" data-order="2">
         <div className="portfolio-title-hero-inner">
           <h1 className="portfolio-cinematic-title">{page.title}</h1>
-          <div className="portfolio-title-bar" />
+          <div className="portfolio-title-bar" style={{ background: accent }} />
+          {ds.hero.subtitle && <p className="portfolio-hero-subtitle">{ds.hero.subtitle}</p>}
         </div>
       </section>
 
@@ -145,6 +179,7 @@ export function PortfolioView({ page }: { page: PageData }) {
         template={template}
         snapshot={snap}
         title={page.title}
+        ds={dsTemplate}
       />
 
       <footer className="public-portfolio-foot" data-scroll="fade-up">

@@ -372,6 +372,13 @@ export function PortfolioGenerator() {
                         })()}
                       </p>
                     </Link>
+                    <Link
+                      href={`/portfolio/${page.id}/design`}
+                      className="pw-saved-design"
+                      aria-label="ปรับแต่งดีไซน์"
+                    >
+                      <GearSix weight="duotone" size={14} />
+                    </Link>
                     <button
                       className="pw-saved-pdf"
                       onClick={async () => {

@@ -49,6 +49,10 @@ export type Snapshot = {
 export type TemplateProps = {
   snapshot: Snapshot;
   title: string;
+  designSettings?: {
+    cert_columns?: 2 | 3 | 4;
+    section_order?: string[];
+  };
 };
 
 export { ModernTemplate } from "./modern";
